@@ -21,7 +21,7 @@ export function App() {
   const [activeSection, setActiveSection] = useState('hero');
   const [selectedImage, setSelectedImage] = useState(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+  const [comingSoonInfo, setComingSoonInfo] = useState({ isOpen: false, title: '', message: '' });
   const lenisRef = useRef(null);
 
   // Initialize Lenis Smooth Scroll
@@ -99,6 +99,22 @@ export function App() {
     }
   };
 
+  const handleOpenGalleryComingSoon = () => {
+    setComingSoonInfo({
+      isOpen: true,
+      title: 'GALLERY FEATURE',
+      message: 'The developer is lazy. The full gallery feature will come soon!'
+    });
+  };
+
+  const handleOpenSocialComingSoon = (name) => {
+    setComingSoonInfo({
+      isOpen: true,
+      title: `${name} PAGE`,
+      message: `The developer is lazy. The official ${name.toLowerCase()} page will come soon!`
+    });
+  };
+
   return (
     <div className="makima-editorial-root">
       {/* Fullscreen Video Cinematic Intro Overlay */}
@@ -130,7 +146,7 @@ export function App() {
             <Quote />
             <Gallery
               onSelectImage={(img) => setSelectedImage(img)}
-              onOpenComingSoon={() => setIsComingSoonOpen(true)}
+              onOpenComingSoon={handleOpenGalleryComingSoon}
             />
           </div>
         </section>
@@ -139,6 +155,7 @@ export function App() {
         <LegacyFooter
           onNavigate={handleNavigate}
           onOpenReport={() => setIsReportOpen(true)}
+          onOpenSocialComingSoon={handleOpenSocialComingSoon}
         />
       </main>
 
@@ -149,7 +166,12 @@ export function App() {
       <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
 
       {/* Coming Soon Modal */}
-      <ComingSoonModal isOpen={isComingSoonOpen} onClose={() => setIsComingSoonOpen(false)} />
+      <ComingSoonModal
+        isOpen={comingSoonInfo.isOpen}
+        title={comingSoonInfo.title}
+        message={comingSoonInfo.message}
+        onClose={() => setComingSoonInfo({ ...comingSoonInfo, isOpen: false })}
+      />
     </div>
   );
 }

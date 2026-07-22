@@ -2,8 +2,10 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './ComingSoonModal.css';
 
-export function ComingSoonModal({ isOpen, onClose }) {
+export function ComingSoonModal({ isOpen, onClose, title = 'COMING SOON', message }) {
   if (!isOpen) return null;
+
+  const defaultMessage = 'The developer is lazy. The full feature will come soon!';
 
   return (
     <AnimatePresence>
@@ -35,10 +37,10 @@ export function ComingSoonModal({ isOpen, onClose }) {
           </div>
 
           <div className="coming-soon-content">
-            <span className="coming-soon-badge">GALLERY FEATURE</span>
-            <h3 className="coming-soon-title">COMING SOON</h3>
+            <span className="coming-soon-badge">PUBLIC SAFETY ANNOUNCEMENT</span>
+            <h3 className="coming-soon-title">{title}</h3>
             <p className="coming-soon-text">
-              The developer is lazy. The full gallery feature will come soon!
+              {message || defaultMessage}
             </p>
 
             <button className="coming-soon-btn" onClick={onClose}>

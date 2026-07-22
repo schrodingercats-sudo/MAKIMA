@@ -190,34 +190,46 @@
   color: rgba(17, 17, 17, 0.55);
 }
 
-/* Report Bug Trigger Button */
-.footer-report-btn {
-  display: inline-flex;
+/* Fixed Floating Report Bug Button at Bottom-Right */
+.floating-report-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(166, 61, 61, 0.08);
-  border: 1px solid rgba(166, 61, 61, 0.25);
-  padding: 6px 14px;
-  border-radius: 20px;
+  background: rgba(28, 25, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 40px;
+  color: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-report-btn:hover {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(166, 61, 61, 0.4);
+}
+
+.floating-report-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.floating-report-tooltip {
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: var(--accent-red);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.footer-report-btn:hover {
-  background: var(--accent-red);
-  color: #FFFFFF;
-  transform: translateY(-1px);
-}
-
-.footer-report-icon {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
 }
 
 .footer-exterminate-tag {
@@ -264,5 +276,15 @@
     flex-direction: column;
     gap: 16px;
     text-align: center;
+  }
+
+  .floating-report-btn {
+    bottom: 16px;
+    right: 16px;
+    padding: 8px 12px;
+  }
+
+  .floating-report-tooltip {
+    display: none;
   }
 }
