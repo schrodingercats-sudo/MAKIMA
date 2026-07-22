@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
+import { Analytics } from '@vercel/analytics/react';
 import CinematicIntro from './components/CinematicIntro';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -172,6 +173,9 @@ export function App() {
         message={comingSoonInfo.message}
         onClose={() => setComingSoonInfo({ ...comingSoonInfo, isOpen: false })}
       />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
