@@ -10,7 +10,7 @@
   ],
   "headers": [
     {
-      "source": "/og-image.png",
+      "source": "/og-image.(jpg|png|webp)",
       "headers": [
         {
           "key": "Cache-Control",
