@@ -176,6 +176,9 @@ export function App() {
         message={comingSoonInfo.message}
         onClose={() => setComingSoonInfo({ ...comingSoonInfo, isOpen: false })}
       />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
