@@ -48,19 +48,13 @@ export function RelationshipsDossier() {
         try {
           flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
 
-          // Attach wheel listener to canvas elements to forward wheel scrolling directly to window scroll
+          // Disable canvas pointer-events by default so touch & trackpad gestures scroll the page 100% smoothly
           setTimeout(() => {
             if (containerRef.current) {
-              const canvasElements = containerRef.current.querySelectorAll('canvas, .df-3dcanvas, ._df_book');
-              canvasElements.forEach((el) => {
-                el.addEventListener('wheel', (e) => {
-                  if (window.lenis) {
-                    window.lenis.scrollTo(window.scrollY + e.deltaY, { immediate: true });
-                  } else {
-                    window.scrollBy(0, e.deltaY);
-                  }
-                }, { passive: true });
-              });
+              const canvasEl = containerRef.current.querySelector('canvas') || document.querySelector('.df-3dcanvas');
+              if (canvasEl) {
+                canvasEl.style.pointerEvents = 'none';
+              }
             }
           }, 300);
         } catch (err) {
@@ -81,9 +75,25 @@ export function RelationshipsDossier() {
     };
   }, []);
 
-  const handleBookClick = () => {
+  const handleBookClick = (e) => {
     if (showTag) {
       setShowTag(false);
+    }
+
+    // Trigger next page flip on click
+    if (flipBookInstance.current && typeof flipBookInstance.current.next === 'function') {
+      try {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        // Click on left half flips backward, right half flips forward
+        if (clickX < rect.width / 2) {
+          flipBookInstance.current.prev();
+        } else {
+          flipBookInstance.current.next();
+        }
+      } catch (err) {
+        flipBookInstance.current.next();
+      }
     }
   };
 
