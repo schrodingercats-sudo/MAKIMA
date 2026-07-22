@@ -1,0 +1,115 @@
+/* Editorial Typography Rules */
+
+/* Headings */
+h1, h2, h3, h4, h5, h6, .font-serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+h1, .text-display-xl {
+  font-size: clamp(3rem, 7vw, 7.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+h2, .text-display-lg {
+  font-size: clamp(2.25rem, 4.5vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+h3, .text-display-md {
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  font-weight: 400;
+}
+
+h4, .text-display-sm {
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 400;
+}
+
+/* Japanese Typography Elements */
+.font-jp {
+  font-family: var(--font-jp);
+}
+
+.text-jp-hero {
+  font-family: var(--font-jp);
+  font-weight: 700;
+  color: var(--accent-red);
+  letter-spacing: 0.15em;
+  opacity: 0.9;
+}
+
+.text-jp-subtle {
+  font-family: var(--font-jp);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+}
+
+/* Body & Editorial Text */
+p, .font-sans {
+  font-family: var(--font-sans);
+}
+
+.text-body-lead {
+  font-size: clamp(1.125rem, 1.5vw, 1.35rem);
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-weight: 300;
+}
+
+.text-body-regular {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+.text-body-muted {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* Editorial Metadata & Tags */
+.editorial-tag {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--accent-red);
+}
+
+.editorial-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.editorial-num {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--accent-hair);
+}
+
+/* Special Accents */
+.text-accent-red {
+  color: var(--accent-red);
+}
+
+.text-accent-gold {
+  color: var(--accent-hair);
+}
+
+.text-italic {
+  font-style: italic;
+}

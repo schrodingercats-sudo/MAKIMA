@@ -1,0 +1,160 @@
+/* Relationships Section Styles with DearFlip 3D WebGL Flipbook */
+.relationships-section {
+  background-color: #F8F6F2;
+  color: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  box-sizing: border-box;
+}
+
+.relationships-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 40px;
+  align-items: center;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+/* Left Column Text Header */
+.relationships-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.relationships-section-tag {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(17, 17, 17, 0.5);
+}
+
+.relationships-main-heading {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.relationships-kanji {
+  font-family: var(--font-jp);
+  font-size: 1rem;
+  color: rgba(17, 17, 17, 0.5);
+  margin-top: 4px;
+}
+
+/* Right Column DearFlip Book Container */
+.relationships-right-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.relationships-book-wrapper-outer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Floating "Click Me" Interactive Tag */
+.interactive-click-tag {
+  position: absolute;
+  top: -42px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(166, 61, 61, 0.08);
+  border: 1px solid rgba(166, 61, 61, 0.3);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-red);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(166, 61, 61, 0.1);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.interactive-click-tag:hover {
+  background: var(--accent-red);
+  color: #FFFFFF;
+}
+
+.tag-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-red);
+  animation: pulseDot 1.5s infinite ease-in-out;
+}
+
+.interactive-click-tag:hover .tag-pulse-dot {
+  background-color: #FFFFFF;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.relationships-book-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  height: 550px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+._df_book {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.df-container {
+  background: transparent !important;
+}
+
+/* Hide Bottom Control Bar */
+.df-ui-controls,
+.df-ui-wrapper,
+.df-ui-bar,
+.df-ui-btn,
+._df_button,
+.df-book-controls {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 1024px) {
+  .relationships-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .relationships-book-wrapper {
+    height: 480px;
+  }
+}

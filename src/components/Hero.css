@@ -1,0 +1,144 @@
+/* Hero Section Styles matching final design.png */
+.editorial-hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 700px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background-color: #111111;
+  color: #F8F6F2;
+}
+
+/* Background Layers */
+.hero-background-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.hero-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  opacity: 0.9;
+}
+
+.hero-overlay-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(17, 17, 17, 0.75) 0%,
+    rgba(17, 17, 17, 0.4) 40%,
+    rgba(17, 17, 17, 0.2) 100%
+  ),
+  linear-gradient(
+    0deg,
+    rgba(17, 17, 17, 0.8) 0%,
+    transparent 50%,
+    rgba(17, 17, 17, 0.6) 100%
+  );
+}
+
+.hero-overlay-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(248, 246, 242, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+/* Left Track Vertical Numbers 01 to 07 */
+.hero-left-track {
+  position: absolute;
+  left: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hero-track-num {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(248, 246, 242, 0.35);
+  transition: color 0.3s ease;
+}
+
+.hero-track-num.active {
+  color: var(--accent-red);
+}
+
+/* Hero Content Container (Left Aligned) */
+.hero-content-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding-left: 96px;
+}
+
+.hero-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 650px;
+}
+
+.hero-jp-sub {
+  font-family: var(--font-jp);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: rgba(248, 246, 242, 0.65);
+  letter-spacing: 0.3em;
+  margin-bottom: 8px;
+}
+
+.hero-main-title {
+  font-family: var(--font-serif);
+  font-size: clamp(4.5rem, 9vw, 8.5rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #FFFFFF;
+  line-height: 0.95;
+  margin-bottom: 24px;
+}
+
+.hero-subtitle-text {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #FFFFFF;
+  margin-bottom: 24px;
+  display: block;
+}
+
+.hero-tagline-block p {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-style: italic;
+  color: rgba(248, 246, 242, 0.85);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Bottom Right Vertical Scroll Annotation */
+.hero-scroll-vertical {
+  position: absolute;
+  right: 48px;
+  bottom: 60px;
+  z-index: 10;
+  writing-mode: vertical-rl;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: rgba(248, 246, 242, 0.5);
+}

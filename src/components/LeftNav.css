@@ -1,0 +1,115 @@
+/* Left Side Section Indicator Track CSS */
+.editorial-left-nav {
+  position: fixed;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--z-nav);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.left-nav-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.left-nav-line {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background-color: var(--border-subtle);
+  z-index: -1;
+}
+
+.left-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  group: true;
+}
+
+.left-nav-num {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  width: 20px;
+  text-align: right;
+  transition: color var(--transition-fast), font-weight var(--transition-fast);
+  opacity: 0.7;
+}
+
+.left-nav-item.is-active .left-nav-num {
+  color: var(--accent-red);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.left-nav-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--text-muted);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.left-nav-item:hover .left-nav-dot {
+  border-color: var(--accent-red);
+}
+
+.left-nav-item.is-active .left-nav-dot {
+  border-color: var(--accent-red);
+  background-color: var(--accent-red);
+}
+
+.left-nav-active-fill {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-red);
+}
+
+.left-nav-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text-primary);
+  color: var(--bg-surface);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  padding: 4px 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  border-radius: 2px;
+}
+
+.left-nav-item:hover .left-nav-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(4px);
+}
+
+@media (max-width: 1599px) {
+  .editorial-left-nav {
+    display: none;
+  }
+}

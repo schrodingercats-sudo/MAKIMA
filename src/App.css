@@ -1,0 +1,54 @@
+/* Root & Placeholder Container Styles */
+.makima-editorial-root {
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.editorial-main-content {
+  position: relative;
+  width: 100%;
+}
+
+/* Quotes & Gallery 2-Column Section matching final design.png */
+.quotes-gallery-section {
+  background-color: #F8F6F2;
+  color: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  box-sizing: border-box;
+}
+
+.quotes-gallery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+  .quotes-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Focus Visible Keyboard Navigation Rings */
+:focus-visible {
+  outline: 2px solid var(--accent-red);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Accessibility Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

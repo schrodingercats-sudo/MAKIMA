@@ -1,0 +1,353 @@
+/* Identity Section Desktop 3-Column & Small Screen Responsive Layout */
+.identity-section {
+  background-color: #F8F6F2;
+  color: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  box-sizing: border-box;
+}
+
+.identity-grid-three-col {
+  display: grid;
+  grid-template-columns: 150px 300px 1fr;
+  gap: 40px;
+  align-items: center;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+/* Column 1: Far Left Navigation List */
+.identity-nav-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.identity-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.identity-nav-list .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(17, 17, 17, 0.4);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.identity-nav-list .nav-item:hover,
+.identity-nav-list .nav-item.active {
+  color: var(--accent-red);
+  font-weight: 700;
+}
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-red);
+}
+
+.nav-num {
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* Column 2: Middle Text Narrative */
+.identity-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.identity-section-tag {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(17, 17, 17, 0.5);
+}
+
+.identity-main-heading {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.text-rust-italic {
+  color: var(--accent-red);
+  font-style: italic;
+  font-family: var(--font-serif);
+}
+
+.identity-body-paragraph {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: rgba(17, 17, 17, 0.75);
+  margin-top: 4px;
+}
+
+/* Column 3: Right Dark Card Container */
+.identity-card-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.identity-card-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.card-arrow-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  color: #111111;
+}
+
+.card-arrow-btn:hover {
+  background: var(--accent-red);
+  color: #FFFFFF;
+  border-color: var(--accent-red);
+}
+
+.card-arrow-btn.prev-btn {
+  margin-right: -22px;
+}
+
+.card-arrow-btn.next-btn {
+  margin-left: -22px;
+}
+
+/* Dark Identity Card */
+.identity-dark-card {
+  width: 100%;
+  max-width: 660px;
+  height: 380px;
+  background-color: #1C1917;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.identity-card-inner {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  height: 100%;
+}
+
+.identity-card-image-col {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #141110;
+}
+
+.identity-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Empty Placeholder for User Images */
+.identity-image-empty-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  padding: 20px;
+  text-align: center;
+}
+
+.empty-tag-label {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-red);
+}
+
+.empty-tag-sub {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.identity-card-info-col {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #FFFFFF;
+}
+
+.card-counter {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-red);
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #FFFFFF !important;
+  line-height: 1.25;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.card-kanji {
+  font-family: var(--font-jp);
+  font-size: 0.9rem;
+  color: var(--accent-hair);
+  margin-bottom: 18px;
+}
+
+.card-spec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.spec-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+}
+
+.spec-label {
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.6);
+  width: 85px;
+}
+
+.spec-val {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.spec-stars {
+  display: flex;
+  gap: 4px;
+}
+
+/* Pagination Dots */
+.identity-pagination-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.identity-pagination-dots .page-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: rgba(17, 17, 17, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.identity-pagination-dots .page-dot.active {
+  background-color: var(--accent-red);
+  width: 20px;
+  border-radius: 4px;
+}
+
+/* Small Screens / Tablet Layout (< 1024px) */
+@media (max-width: 1024px) {
+  .identity-grid-three-col {
+    grid-template-columns: 160px 1fr;
+    grid-template-rows: auto auto;
+    gap: 32px;
+  }
+
+  .identity-nav-col {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .identity-text-col {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .identity-card-col {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: 100%;
+  }
+}
+
+/* Mobile Layout (< 680px) */
+@media (max-width: 680px) {
+  .identity-grid-three-col {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .identity-nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .identity-nav-col,
+  .identity-text-col,
+  .identity-card-col {
+    grid-column: 1;
+  }
+
+  .identity-card-inner {
+    grid-template-columns: 1fr;
+    grid-template-rows: 180px 1fr;
+  }
+
+  .identity-dark-card {
+    height: auto;
+  }
+}

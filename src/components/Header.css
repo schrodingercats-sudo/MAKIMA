@@ -1,0 +1,206 @@
+.editorial-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: var(--z-header);
+  padding: 24px 0;
+  transition: background 0.4s ease, padding 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Light Frosted Glass Header Bar when Scrolled for 100% Text Legibility */
+.editorial-header.is-scrolled {
+  padding: 14px 0;
+  background: rgba(248, 246, 242, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-logo-btn {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+/* Adaptive Header Logo Title: White on Dark Hero, Dark Charcoal when Scrolled */
+.logo-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #FFFFFF;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: color 0.3s ease;
+}
+
+.editorial-header.is-scrolled .logo-title {
+  color: #111111;
+  text-shadow: none;
+}
+
+.logo-jp {
+  font-family: var(--font-jp);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-red);
+  letter-spacing: 0.1em;
+}
+
+/* Adaptive Frosted Glass Pill Nav Bar */
+.desktop-nav {
+  background: rgba(23, 19, 17, 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  padding: 6px 22px;
+  border-radius: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.3s ease;
+}
+
+.editorial-header.is-scrolled .desktop-nav {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(17, 17, 17, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.desktop-nav .nav-list {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+}
+
+.nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 6px 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.editorial-header.is-scrolled .nav-link {
+  color: #111111;
+}
+
+.nav-link:hover {
+  color: var(--accent-red);
+}
+
+.editorial-header.is-scrolled .nav-link:hover {
+  color: var(--accent-red);
+}
+
+.nav-link.is-active,
+.editorial-header.is-scrolled .nav-link.is-active {
+  color: var(--accent-red);
+}
+
+.nav-link-num {
+  font-family: var(--font-serif);
+  font-size: 0.7rem;
+  color: var(--accent-hair);
+  opacity: 0.9;
+}
+
+.active-indicator-dot {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-red);
+  border-radius: 1px;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  color: #FFFFFF;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+
+.editorial-header.is-scrolled .mobile-menu-toggle {
+  color: #111111;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  width: 100%;
+  background: rgba(248, 246, 242, 0.98);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 24px;
+  z-index: var(--z-header);
+  box-shadow: var(--shadow-editorial);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-nav ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: left;
+  padding: 8px 0;
+}
+
+.mobile-nav-link.is-active {
+  color: var(--accent-red);
+}
+
+.mobile-nav-num {
+  color: var(--accent-hair);
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .desktop-nav {
+    display: none;
+  }
+  
+  .mobile-menu-toggle {
+    display: block;
+  }
+}

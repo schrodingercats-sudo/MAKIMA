@@ -1,0 +1,57 @@
+/* Quotes Card Styles matching final design.png */
+.quotes-card-item {
+  width: 100%;
+  height: 480px;
+  background-color: #EFEAE2;
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+}
+
+.quotes-card-text {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.quotes-section-tag {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(17, 17, 17, 0.5);
+  margin-bottom: 24px;
+}
+
+.quotes-big-quote {
+  font-family: var(--font-serif);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.quotes-author {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: rgba(17, 17, 17, 0.5);
+}
+
+.quotes-card-image {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #1A1918;
+}
+
+.quotes-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
