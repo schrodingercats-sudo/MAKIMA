@@ -8,6 +8,8 @@ export function SecurityCheckpoint({ onComplete }) {
   const [isPassed, setIsPassed] = useState(false);
 
   useEffect(() => {
+    const isPinned = window.location.search.includes('security=stay');
+
     const timer1 = setTimeout(() => {
       setStatus('CHECKING PUBLIC SAFETY CLEARANCE...');
       setProgress(45);
@@ -21,11 +23,15 @@ export function SecurityCheckpoint({ onComplete }) {
     const timer3 = setTimeout(() => {
       setStatus('ACCESS GRANTED — WELCOME TO PUBLIC SAFETY HQ');
       setProgress(100);
-      setIsPassed(true);
+      if (!isPinned) {
+        setIsPassed(true);
+      }
     }, 1800);
 
     const timer4 = setTimeout(() => {
-      if (onComplete) onComplete();
+      if (!isPinned && onComplete) {
+        onComplete();
+      }
     }, 2400);
 
     return () => {
