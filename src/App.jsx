@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 import { Analytics } from '@vercel/analytics/react';
+import SecurityCheckpoint from './components/SecurityCheckpoint';
 import MobileWarningOverlay from './components/MobileWarningOverlay';
 import CinematicIntro from './components/CinematicIntro';
 import Header from './components/Header';
@@ -24,6 +25,7 @@ export function App() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [comingSoonInfo, setComingSoonInfo] = useState({ isOpen: false, title: '', message: '' });
+  const [securityPassed, setSecurityPassed] = useState(false);
   const lenisRef = useRef(null);
 
   // Initialize Lenis Smooth Scroll
@@ -119,6 +121,11 @@ export function App() {
 
   return (
     <div className="makima-editorial-root">
+      {/* Vercel Security Checkpoint Overlay */}
+      {!securityPassed && (
+        <SecurityCheckpoint onComplete={() => setSecurityPassed(true)} />
+      )}
+
       {/* Vercel Analytics Tracker */}
       <Analytics />
 
