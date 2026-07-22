@@ -24,7 +24,24 @@ export function RelationshipsDossier() {
 
   useEffect(() => {
     let checkInterval;
-    let watchdogTimer;
+    let observer;
+
+    // Set global dFlip defaults to disable all zoom & mousewheel interception
+    if (window.dFlipOptions) {
+      window.dFlipOptions.zoom = false;
+      window.dFlipOptions.enableZoom = false;
+      window.dFlipOptions.mousewheel = false;
+    }
+
+    const disableCanvasPointerEvents = () => {
+      if (containerRef.current) {
+        const canvasEls = containerRef.current.querySelectorAll('canvas');
+        canvasEls.forEach((c) => {
+          c.style.pointerEvents = 'none';
+          c.style.touchAction = 'pan-y';
+        });
+      }
+    };
 
     const initFlipBook = () => {
       if (window.jQuery && window.jQuery.fn && window.jQuery.fn.flipBook && containerRef.current) {
@@ -43,6 +60,9 @@ export function RelationshipsDossier() {
           controlsPosition: 'none',
           zoom: false,
           enableZoom: false,
+          zoomStep: 0,
+          maxZoom: 1,
+          minZoom: 1,
           mousewheel: false,
           backgroundColor: 'transparent',
         };
@@ -50,27 +70,19 @@ export function RelationshipsDossier() {
         try {
           flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
 
-          // Safety watchdog: If WebGL loading screen stalls for > 1.8s, force 2D rendering fallback so it NEVER hangs
-          watchdogTimer = setTimeout(() => {
-            if (containerRef.current) {
-              const loadingEl = containerRef.current.querySelector('.df-loading, ._df_loading');
-              if (loadingEl && loadingEl.textContent.includes('Loading')) {
-                console.log('DearFlip WebGL loading stalled; activating fast 2D fallback');
-                loadingEl.remove();
-                if (flipBookInstance.current && typeof flipBookInstance.current.destroy === 'function') {
-                  flipBookInstance.current.destroy();
-                }
-                options.webgl = false; // Fallback to 2D CSS Mode
-                flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
-              }
+          // Watch for canvas creation and force pointer-events: none instantly
+          disableCanvasPointerEvents();
+          observer = new MutationObserver(() => {
+            disableCanvasPointerEvents();
+          });
+          observer.observe(containerRef.current, { childList: true, subtree: true });
 
-              // Apply pointer-events: none to canvas AFTER rendering to prevent trackpad scroll trapping
-              const canvasEl = containerRef.current.querySelector('canvas') || document.querySelector('.df-3dcanvas');
-              if (canvasEl) {
-                canvasEl.style.pointerEvents = 'none';
-              }
+          // Prevent trackpad pinch zoom on container
+          containerRef.current.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+              e.preventDefault();
             }
-          }, 1800);
+          }, { passive: false });
         } catch (err) {
           console.log('DearFlip init error:', err);
         }
@@ -86,7 +98,7 @@ export function RelationshipsDossier() {
 
     return () => {
       if (checkInterval) clearInterval(checkInterval);
-      if (watchdogTimer) clearTimeout(watchdogTimer);
+      if (observer) observer.disconnect();
     };
   }, []);
 

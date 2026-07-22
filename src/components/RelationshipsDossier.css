@@ -127,30 +127,40 @@
 }
 
 ._df_book,
-.df-container {
+.df-container,
+.df-3dcanvas,
+canvas.df-3dcanvas,
+canvas,
+.df-element {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important;
   box-shadow: none !important;
   touch-action: pan-y !important;
+  pointer-events: none !important;
 }
 
 .df-container {
   background: transparent !important;
 }
 
-/* Hide Bottom Control Bar & Zoom Tooltips */
+/* Hide Bottom Control Bar, Zoom Buttons, & Zoom Tooltips Completely */
 .df-ui-controls,
 .df-ui-wrapper,
 .df-ui-bar,
 .df-ui-btn,
 ._df_button,
 .df-book-controls,
-.df-tooltip {
+.df-tooltip,
+.df-zoom-control,
+.df-ui-zoom,
+.df-icon-zoom-in,
+.df-icon-zoom-out {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
+  width: 0 !important;
   pointer-events: none !important;
 }
 
