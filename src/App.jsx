@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
+import { Analytics } from '@vercel/analytics/react';
 import CinematicIntro from './components/CinematicIntro';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -117,6 +118,9 @@ export function App() {
 
   return (
     <div className="makima-editorial-root">
+      {/* Vercel Analytics Tracker */}
+      <Analytics />
+
       {/* Fullscreen Video Cinematic Intro Overlay */}
       <CinematicIntro />
 
