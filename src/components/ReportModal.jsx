@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { sendDiscordBugReport } from '../utils/discordWebhook';
 import './ReportModal.css';
 
 export function ReportModal({ isOpen, onClose }) {
@@ -7,7 +8,35 @@ export function ReportModal({ isOpen, onClose }) {
   const [page, setPage] = useState('Gallery');
   const [severity, setSeverity] = useState('Minor');
   const [fileName, setFileName] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [autoMetadata, setAutoMetadata] = useState({ browser: '', viewport: '', path: '' });
+
+  useEffect(() => {
+    if (isOpen) {
+      // Auto-detect browser & screen specs
+      const ua = navigator.userAgent;
+      let browserName = 'Browser';
+      if (ua.includes('Chrome')) browserName = 'Chrome';
+      else if (ua.includes('Safari')) browserName = 'Safari';
+      else if (ua.includes('Firefox')) browserName = 'Firefox';
+
+      const osName = ua.includes('Win') ? 'Windows' : ua.includes('Mac') ? 'macOS' : 'Mobile';
+
+      setAutoMetadata({
+        browser: `${browserName} (${osName})`,
+        viewport: `${window.innerWidth}×${window.innerHeight}`,
+        path: window.location.pathname || '/'
+      });
+
+      // Load saved webhook URL if present in localStorage
+      const savedWebhook = localStorage.getItem('makima_discord_webhook');
+      if (savedWebhook) {
+        setWebhookUrl(savedWebhook);
+      }
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -17,15 +46,32 @@ export function ReportModal({ isOpen, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    if (webhookUrl) {
+      localStorage.setItem('makima_discord_webhook', webhookUrl);
+    }
+
+    // Dispatch to Discord Webhook
+    await sendDiscordBugReport({
+      description,
+      page,
+      severity,
+      fileName,
+      webhookUrl
+    });
+
+    setIsSubmitting(false);
     setIsSubmitted(true);
+
     setTimeout(() => {
       setIsSubmitted(false);
       setDescription('');
       setFileName('');
       onClose();
-    }, 2200);
+    }, 2500);
   };
 
   return (
@@ -58,6 +104,9 @@ export function ReportModal({ isOpen, onClose }) {
                 alt="Makima Report Mascot"
                 className="report-mascot-img"
               />
+              <div className="report-quote-bubble">
+                “Found an imperfection? Tell me. I'll have it dealt with.”
+              </div>
             </div>
 
             {/* Right Column: Interactive Form Panel */}
@@ -69,14 +118,21 @@ export function ReportModal({ isOpen, onClose }) {
                   animate={{ opacity: 1, scale: 1 }}
                 >
                   <div className="success-icon">✓</div>
-                  <h3>Report Submitted!</h3>
-                  <p>Your issue report has been dispatched to Public Safety HQ.</p>
+                  <h3 className="success-makima-title">“Understood. I'll make sure it's corrected.”</h3>
+                  <p className="success-sub">Report dispatched straight to Public Safety Discord.</p>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="report-form">
                   <div className="report-header">
+                    <span className="report-hq-badge">PUBLIC SAFETY HQ — BUG DISPATCH</span>
                     <h2 className="report-title">Report an Issue?</h2>
-                    <p className="report-subtitle">Found a problem? Let me know.</p>
+                  </div>
+
+                  {/* Automated Metadata Pills Bar */}
+                  <div className="auto-metadata-bar">
+                    <span className="meta-pill">🌐 {autoMetadata.path}</span>
+                    <span className="meta-pill">💻 {autoMetadata.browser}</span>
+                    <span className="meta-pill">📐 {autoMetadata.viewport}</span>
                   </div>
 
                   {/* Textarea */}
@@ -84,7 +140,7 @@ export function ReportModal({ isOpen, onClose }) {
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe the issue..."
+                      placeholder="Describe the issue in detail..."
                       className="report-textarea"
                       rows={3}
                       required
@@ -93,18 +149,18 @@ export function ReportModal({ isOpen, onClose }) {
 
                   {/* Page Dropdown */}
                   <div className="form-group row-group">
-                    <label className="form-label">Page:</label>
+                    <label className="form-label">Page / Section:</label>
                     <select
                       value={page}
                       onChange={(e) => setPage(e.target.value)}
                       className="report-select"
                     >
-                      <option value="Gallery">Gallery</option>
-                      <option value="Story">Identity / Story</option>
-                      <option value="Profile">Character Profile</option>
-                      <option value="Relationships">Relationships Flipbook</option>
-                      <option value="Timeline">Timeline</option>
-                      <option value="Hero">Hero Section</option>
+                      <option value="Gallery">Gallery (07 GALLERY)</option>
+                      <option value="Story">Identity / Story (01 IDENTITY)</option>
+                      <option value="Profile">Character Profile (02 PROFILE)</option>
+                      <option value="Relationships">Relationships 3D Flipbook (03)</option>
+                      <option value="Timeline">Timeline (05 TIMELINE)</option>
+                      <option value="Hero">Hero Presentation</option>
                       <option value="Footer">Footer & Legacy</option>
                     </select>
                   </div>
@@ -160,9 +216,21 @@ export function ReportModal({ isOpen, onClose }) {
                     </label>
                   </div>
 
+                  {/* Discord Webhook URL Configuration */}
+                  <div className="form-group webhook-group">
+                    <label className="form-label">Discord Webhook URL (Optional):</label>
+                    <input
+                      type="url"
+                      placeholder="https://discord.com/api/webhooks/..."
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      className="webhook-input"
+                    />
+                  </div>
+
                   {/* Submit Action Button */}
-                  <button type="submit" className="report-submit-btn">
-                    Submit Report
+                  <button type="submit" className="report-submit-btn" disabled={isSubmitting}>
+                    {isSubmitting ? 'DISPATCHING TO DISCORD...' : 'Submit Report →'}
                   </button>
                 </form>
               )}
