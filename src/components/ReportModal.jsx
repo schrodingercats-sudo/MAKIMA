@@ -8,7 +8,6 @@ export function ReportModal({ isOpen, onClose }) {
   const [page, setPage] = useState('Gallery');
   const [severity, setSeverity] = useState('Minor');
   const [fileName, setFileName] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [autoMetadata, setAutoMetadata] = useState({ browser: '', viewport: '', path: '' });
@@ -29,12 +28,6 @@ export function ReportModal({ isOpen, onClose }) {
         viewport: `${window.innerWidth}×${window.innerHeight}`,
         path: window.location.pathname || '/'
       });
-
-      // Load saved webhook URL if present in localStorage
-      const savedWebhook = localStorage.getItem('makima_discord_webhook');
-      if (savedWebhook) {
-        setWebhookUrl(savedWebhook);
-      }
     }
   }, [isOpen]);
 
@@ -50,17 +43,12 @@ export function ReportModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
 
-    if (webhookUrl) {
-      localStorage.setItem('makima_discord_webhook', webhookUrl);
-    }
-
     // Dispatch to Discord Webhook
     await sendDiscordBugReport({
       description,
       page,
       severity,
-      fileName,
-      webhookUrl
+      fileName
     });
 
     setIsSubmitting(false);
@@ -214,18 +202,6 @@ export function ReportModal({ isOpen, onClose }) {
                       📎 {fileName ? fileName : 'Upload Image'}
                       <input type="file" accept="image/*" onChange={handleFileChange} hidden />
                     </label>
-                  </div>
-
-                  {/* Discord Webhook URL Configuration */}
-                  <div className="form-group webhook-group">
-                    <label className="form-label">Discord Webhook URL (Optional):</label>
-                    <input
-                      type="url"
-                      placeholder="https://discord.com/api/webhooks/..."
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      className="webhook-input"
-                    />
                   </div>
 
                   {/* Submit Action Button */}
