@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendDiscordBugReport } from '../utils/discordWebhook';
 import './ReportModal.css';
@@ -10,26 +10,6 @@ export function ReportModal({ isOpen, onClose }) {
   const [fileName, setFileName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [autoMetadata, setAutoMetadata] = useState({ browser: '', viewport: '', path: '' });
-
-  useEffect(() => {
-    if (isOpen) {
-      // Auto-detect browser & screen specs
-      const ua = navigator.userAgent;
-      let browserName = 'Browser';
-      if (ua.includes('Chrome')) browserName = 'Chrome';
-      else if (ua.includes('Safari')) browserName = 'Safari';
-      else if (ua.includes('Firefox')) browserName = 'Firefox';
-
-      const osName = ua.includes('Win') ? 'Windows' : ua.includes('Mac') ? 'macOS' : 'Mobile';
-
-      setAutoMetadata({
-        browser: `${browserName} (${osName})`,
-        viewport: `${window.innerWidth}×${window.innerHeight}`,
-        path: window.location.pathname || '/'
-      });
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -114,13 +94,6 @@ export function ReportModal({ isOpen, onClose }) {
                   <div className="report-header">
                     <span className="report-hq-badge">PUBLIC SAFETY HQ — BUG DISPATCH</span>
                     <h2 className="report-title">Report an Issue?</h2>
-                  </div>
-
-                  {/* Automated Metadata Pills Bar */}
-                  <div className="auto-metadata-bar">
-                    <span className="meta-pill">🌐 {autoMetadata.path}</span>
-                    <span className="meta-pill">💻 {autoMetadata.browser}</span>
-                    <span className="meta-pill">📐 {autoMetadata.viewport}</span>
                   </div>
 
                   {/* Textarea */}

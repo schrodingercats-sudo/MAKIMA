@@ -24,6 +24,7 @@ export function RelationshipsDossier() {
 
   useEffect(() => {
     let checkInterval;
+    let watchdogTimer;
 
     const initFlipBook = () => {
       if (window.jQuery && window.jQuery.fn && window.jQuery.fn.flipBook && containerRef.current) {
@@ -33,6 +34,7 @@ export function RelationshipsDossier() {
           height: 520,
           duration: 800,
           webgl: true,
+          webglMin: false,
           pageSize: 2,
           showCover: true,
           soundEnable: false,
@@ -48,15 +50,27 @@ export function RelationshipsDossier() {
         try {
           flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
 
-          // Disable canvas pointer-events by default so touch & trackpad gestures scroll the page 100% smoothly
-          setTimeout(() => {
+          // Safety watchdog: If WebGL loading screen stalls for > 1.8s, force 2D rendering fallback so it NEVER hangs
+          watchdogTimer = setTimeout(() => {
             if (containerRef.current) {
+              const loadingEl = containerRef.current.querySelector('.df-loading, ._df_loading');
+              if (loadingEl && loadingEl.textContent.includes('Loading')) {
+                console.log('DearFlip WebGL loading stalled; activating fast 2D fallback');
+                loadingEl.remove();
+                if (flipBookInstance.current && typeof flipBookInstance.current.destroy === 'function') {
+                  flipBookInstance.current.destroy();
+                }
+                options.webgl = false; // Fallback to 2D CSS Mode
+                flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
+              }
+
+              // Apply pointer-events: none to canvas AFTER rendering to prevent trackpad scroll trapping
               const canvasEl = containerRef.current.querySelector('canvas') || document.querySelector('.df-3dcanvas');
               if (canvasEl) {
                 canvasEl.style.pointerEvents = 'none';
               }
             }
-          }, 300);
+          }, 1800);
         } catch (err) {
           console.log('DearFlip init error:', err);
         }
@@ -72,6 +86,7 @@ export function RelationshipsDossier() {
 
     return () => {
       if (checkInterval) clearInterval(checkInterval);
+      if (watchdogTimer) clearTimeout(watchdogTimer);
     };
   }, []);
 

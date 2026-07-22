@@ -127,16 +127,12 @@
 }
 
 ._df_book,
-.df-container,
-.df-3dcanvas,
-canvas.df-3dcanvas,
-canvas {
+.df-container {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important;
   box-shadow: none !important;
   touch-action: pan-y !important;
-  pointer-events: none !important;
 }
 
 .df-container {
