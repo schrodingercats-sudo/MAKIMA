@@ -11,20 +11,17 @@ import Quote from './components/Quote';
 import Gallery from './components/Gallery';
 import LegacyFooter from './components/LegacyFooter';
 import ImageModal from './components/ImageModal';
+import ReportModal from './components/ReportModal';
+import ComingSoonModal from './components/ComingSoonModal';
 import './App.css';
-
-// Lazy-load Agentation so a crash in that module doesn't blank the whole site
-const LazyAgentation = React.lazy(() =>
-  import('agentation')
-    .then((mod) => ({ default: mod.Agentation || mod.default }))
-    .catch(() => ({ default: () => null }))
-);
 
 const SECTIONS = ['hero', 'story', 'profile', 'relationships', 'timeline', 'quotes', 'legacy'];
 
 export function App() {
   const [activeSection, setActiveSection] = useState('hero');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
   const lenisRef = useRef(null);
 
   // Initialize Lenis Smooth Scroll
@@ -110,7 +107,7 @@ export function App() {
       {/* Sticky Header */}
       <Header activeSection={activeSection} onNavigate={handleNavigate} />
 
-      {/* Main Content Area matching final design.png */}
+      {/* Main Content Area */}
       <main className="editorial-main-content">
         {/* Section 1: Hero */}
         <Hero onScrollClick={handleNavigate} />
@@ -131,21 +128,28 @@ export function App() {
         <section id="quotes" className="quotes-gallery-section section-padding">
           <div className="editorial-container quotes-gallery-grid">
             <Quote />
-            <Gallery onSelectImage={(img) => setSelectedImage(img)} />
+            <Gallery
+              onSelectImage={(img) => setSelectedImage(img)}
+              onOpenComingSoon={() => setIsComingSoonOpen(true)}
+            />
           </div>
         </section>
 
         {/* Section 8: Legacy Tribute & Footer */}
-        <LegacyFooter onNavigate={handleNavigate} />
+        <LegacyFooter
+          onNavigate={handleNavigate}
+          onOpenReport={() => setIsReportOpen(true)}
+        />
       </main>
 
       {/* Lightbox Modal */}
       <ImageModal image={selectedImage} onClose={() => setSelectedImage(null)} />
 
-      {/* Visual Feedback Agentation Toolbar (lazy-loaded) */}
-      <React.Suspense fallback={null}>
-        <LazyAgentation />
-      </React.Suspense>
+      {/* Report Bug Modal */}
+      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal isOpen={isComingSoonOpen} onClose={() => setIsComingSoonOpen(false)} />
     </div>
   );
 }

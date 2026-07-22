@@ -1,7 +1,7 @@
 import React from 'react';
 import './LegacyFooter.css';
 
-export const LegacyFooter = React.memo(function LegacyFooter({ onNavigate }) {
+export const LegacyFooter = React.memo(function LegacyFooter({ onNavigate, onOpenReport }) {
   const handleNavClick = (sectionId) => {
     if (onNavigate) {
       onNavigate(sectionId);
@@ -64,8 +64,8 @@ export const LegacyFooter = React.memo(function LegacyFooter({ onNavigate }) {
                 <ul className="footer-nav-links">
                   <li><a href="#legacy">ABOUT THIS SITE</a></li>
                   <li><a href="#legacy">DISCLAIMER</a></li>
+                  <li><button onClick={onOpenReport}>REPORT AN ISSUE</button></li>
                   <li><a href="#legacy">PRIVACY POLICY</a></li>
-                  <li><a href="#legacy">TERMS OF USE</a></li>
                 </ul>
               </div>
             </div>
@@ -93,6 +93,12 @@ export const LegacyFooter = React.memo(function LegacyFooter({ onNavigate }) {
             <div className="footer-copyright-text">
               © 2025 Makima Tribute. All rights reserved.
             </div>
+
+            {/* Interactive Report Bug Trigger Button */}
+            <button className="footer-report-btn" onClick={onOpenReport} aria-label="Report an Issue">
+              <img src="/images/report-btn-icon.png" alt="Report Bug Icon" className="footer-report-icon" />
+              <span>REPORT AN ISSUE</span>
+            </button>
 
             <div className="footer-exterminate-tag">
               <span className="exterminate-text">EXTERMINATE. CONTROL.</span>

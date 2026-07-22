@@ -1,0 +1,24 @@
+# Allow all major search engines and AI answer crawlers (AEO / GEO Optimization)
+User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Sitemap URL
+Sitemap: https://makima-tribute.vercel.app/sitemap.xml

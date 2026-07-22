@@ -12,7 +12,7 @@ const GALLERY_IMAGES = [
   { id: 7, name: 'gallery-7', src: '/images/gallery-7.webp', title: 'Control Authority' },
 ];
 
-export const Gallery = React.memo(function Gallery({ onSelectImage }) {
+export const Gallery = React.memo(function Gallery({ onSelectImage, onOpenComingSoon }) {
   return (
     <div className="gallery-section-wrapper">
       {/* Gallery Header */}
@@ -27,7 +27,7 @@ export const Gallery = React.memo(function Gallery({ onSelectImage }) {
         </div>
 
         <div className="gallery-header-right">
-          <button className="view-gallery-btn">
+          <button className="view-gallery-btn" onClick={onOpenComingSoon}>
             VIEW GALLERY →
           </button>
         </div>

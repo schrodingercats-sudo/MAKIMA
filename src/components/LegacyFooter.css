@@ -190,6 +190,36 @@
   color: rgba(17, 17, 17, 0.55);
 }
 
+/* Report Bug Trigger Button */
+.footer-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(166, 61, 61, 0.08);
+  border: 1px solid rgba(166, 61, 61, 0.25);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent-red);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer-report-btn:hover {
+  background: var(--accent-red);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.footer-report-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
 .footer-exterminate-tag {
   display: flex;
   align-items: center;
