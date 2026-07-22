@@ -2,17 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://makima-tribute.vercel.app/</loc>
+    <loc>https://makima-web.vercel.app/</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://makima-tribute.vercel.app/images/hero-bg.webp</image:loc>
-      <image:title>MAKIMA Presentation</image:title>
-    </image:image>
-    <image:image>
-      <image:loc>https://makima-tribute.vercel.app/images/book-cover-art.webp</image:loc>
-      <image:title>Relationships Dossier Cover</image:title>
+      <image:loc>https://makima-web.vercel.app/og-image.png</image:loc>
+      <image:title>MAKIMA Presentation Social Card</image:title>
     </image:image>
   </url>
 </urlset>
