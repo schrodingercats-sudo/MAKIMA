@@ -65,6 +65,7 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  touch-action: pan-y !important;
 }
 
 /* Floating "Click Me" Interactive Tag */
@@ -121,26 +122,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: pan-y !important;
 }
 
-._df_book {
+._df_book,
+.df-container,
+.df-3dcanvas,
+canvas.df-3dcanvas {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important;
   box-shadow: none !important;
+  touch-action: pan-y !important;
 }
 
 .df-container {
   background: transparent !important;
 }
 
-/* Hide Bottom Control Bar */
+/* Hide Bottom Control Bar & Zoom Tooltips */
 .df-ui-controls,
 .df-ui-wrapper,
 .df-ui-bar,
 .df-ui-btn,
 ._df_button,
-.df-book-controls {
+.df-book-controls,
+.df-tooltip {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;

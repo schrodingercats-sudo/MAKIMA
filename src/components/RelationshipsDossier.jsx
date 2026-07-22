@@ -47,6 +47,22 @@ export function RelationshipsDossier() {
 
         try {
           flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
+
+          // Attach wheel listener to canvas elements to forward wheel scrolling directly to window scroll
+          setTimeout(() => {
+            if (containerRef.current) {
+              const canvasElements = containerRef.current.querySelectorAll('canvas, .df-3dcanvas, ._df_book');
+              canvasElements.forEach((el) => {
+                el.addEventListener('wheel', (e) => {
+                  if (window.lenis) {
+                    window.lenis.scrollTo(window.scrollY + e.deltaY, { immediate: true });
+                  } else {
+                    window.scrollBy(0, e.deltaY);
+                  }
+                }, { passive: true });
+              });
+            }
+          }, 300);
         } catch (err) {
           console.log('DearFlip init error:', err);
         }
