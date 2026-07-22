@@ -7,11 +7,28 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node modules & dependencies
+# Node modules & build outputs
 node_modules
 dist
 dist-ssr
 *.local
+
+# Internal agent logs & temp files
+.agents/
+scripts/
+
+# Root-level raw media & reference files (not used by production build)
+/*.jpg
+/*.png
+/*.gif
+/*.mp4
+/*.webm
+/*.pdf
+/*.tar
+/*.zip
+/PROJECT.md
+/MAKIMA_MASTER_CONTEXT.md
+/ORIGINAL_REQUEST.md
 
 # Editor & OS files
 .vscode/*
@@ -23,4 +40,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-scripts/

@@ -47,13 +47,6 @@ export function RelationshipsDossier() {
 
         try {
           flipBookInstance.current = window.jQuery(containerRef.current).flipBook(BOOK_PAGES, options);
-          
-          // Prevent trackpad pinch-zoom or scroll-zoom inside canvas
-          if (containerRef.current) {
-            containerRef.current.addEventListener('wheel', (e) => {
-              e.stopPropagation();
-            }, { passive: true });
-          }
         } catch (err) {
           console.log('DearFlip init error:', err);
         }
@@ -71,18 +64,6 @@ export function RelationshipsDossier() {
       if (checkInterval) clearInterval(checkInterval);
     };
   }, []);
-
-  const handleMouseEnter = () => {
-    if (window.lenis) {
-      window.lenis.stop();
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (window.lenis) {
-      window.lenis.start();
-    }
-  };
 
   const handleBookClick = () => {
     if (showTag) {
@@ -104,12 +85,7 @@ export function RelationshipsDossier() {
 
         {/* Right Column DearFlip 3D WebGL Physics Flipbook */}
         <div className="relationships-right-column">
-          <div 
-            className="relationships-book-wrapper-outer" 
-            onClick={handleBookClick}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
+          <div className="relationships-book-wrapper-outer" onClick={handleBookClick}>
             {/* Interactive "Click Me" Hint Tag */}
             <AnimatePresence>
               {showTag && (
