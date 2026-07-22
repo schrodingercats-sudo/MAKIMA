@@ -49,8 +49,8 @@
 
 .report-modal-content-grid {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
   align-items: center;
 }
 
@@ -64,10 +64,12 @@
 
 .report-mascot-img {
   width: 100%;
-  max-width: 280px;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
+  max-width: 240px;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 2px solid var(--accent-red);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
 }
 
 /* Form Column */

@@ -51,11 +51,11 @@ export function ReportModal({ isOpen, onClose }) {
           </button>
 
           <div className="report-modal-content-grid">
-            {/* Left Column: Chibi Makima Mascot */}
+            {/* Left Column: Makima Mascot */}
             <div className="report-mascot-col">
               <img
-                src="/images/report-style.png"
-                alt="Makima Chibi Report Mascot"
+                src="/images/coming-soon.jpg"
+                alt="Makima Report Mascot"
                 className="report-mascot-img"
               />
             </div>
