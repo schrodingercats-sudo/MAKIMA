@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 import { Analytics } from '@vercel/analytics/react';
+import { Agentation } from 'agentation';
 import SecurityCheckpoint from './components/SecurityCheckpoint';
 import MobileWarningOverlay from './components/MobileWarningOverlay';
 import CinematicIntro from './components/CinematicIntro';
@@ -157,6 +158,9 @@ export function App() {
 
   return (
     <div className="makima-editorial-root">
+      {/* Agentation Visual Feedback Toolbar */}
+      <Agentation />
+
       {/* Vercel Security Checkpoint Overlay */}
       {!securityPassed && (
         <SecurityCheckpoint onComplete={() => setSecurityPassed(true)} />
