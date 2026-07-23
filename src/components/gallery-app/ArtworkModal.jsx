@@ -241,43 +241,43 @@ export function ArtworkModal({
                   <div className="toolbar-left-actions">
                     {/* Functional Like Button */}
                     <button
-                      className={`toolbar-btn ${isLiked ? 'liked' : ''}`}
+                      className={`toolbar-btn like-btn ${isLiked ? 'liked' : ''}`}
                       onClick={() => {
                         onToggleLike(artwork.id);
                         showToast(isLiked ? 'Artwork unliked' : 'Artwork liked!');
                       }}
                       title="Like artwork"
                     >
-                      <HugeiconsIcon icon={FavouriteIcon} size={20} />
+                      <HugeiconsIcon icon={FavouriteIcon} size={18} className="toolbar-icon" />
                       <span className="like-count">{artwork.likes + (isLiked ? 1 : 0)}</span>
                     </button>
 
                     {/* Functional Comment Button */}
                     <button
-                      className="toolbar-btn"
+                      className="toolbar-btn icon-only"
                       onClick={() => commentInputRef.current?.focus()}
                       title="Add a comment"
                     >
-                      <HugeiconsIcon icon={Comment01Icon} size={20} />
+                      <HugeiconsIcon icon={Comment01Icon} size={18} className="toolbar-icon" />
                     </button>
 
                     {/* Functional Share Button */}
                     <button
-                      className="toolbar-btn"
+                      className="toolbar-btn icon-only"
                       onClick={handleCopyLink}
                       title="Share link"
                     >
-                      <HugeiconsIcon icon={Share01Icon} size={20} />
+                      <HugeiconsIcon icon={Share01Icon} size={18} className="toolbar-icon" />
                     </button>
 
                     {/* Functional More Options Menu */}
                     <div className="more-menu-wrapper">
                       <button
-                        className={`toolbar-btn ${showMoreMenu ? 'active' : ''}`}
+                        className={`toolbar-btn icon-only ${showMoreMenu ? 'active' : ''}`}
                         onClick={() => setShowMoreMenu(!showMoreMenu)}
                         title="More Options"
                       >
-                        <HugeiconsIcon icon={MoreHorizontalIcon} size={20} />
+                        <HugeiconsIcon icon={MoreHorizontalIcon} size={18} className="toolbar-icon" />
                       </button>
 
                       {showMoreMenu && (
@@ -366,7 +366,7 @@ export function ArtworkModal({
                   </div>
                 </div>
 
-                {/* Comments Discussion Section (Tight gap, no blank whitespace!) */}
+                {/* Comments Discussion Section */}
                 <div className="pinterest-comments-block">
                   <div className="comments-header-row">
                     <span className="comments-count-title">{comments.length} comments</span>

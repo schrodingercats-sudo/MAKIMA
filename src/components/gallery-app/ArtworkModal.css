@@ -163,9 +163,7 @@
 .toolbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 20px;
+  justify-content: center;
   border: none;
   background-color: #F0EDE8;
   color: #333333;
@@ -176,8 +174,23 @@
   transition: all 0.2s ease;
 }
 
+.toolbar-btn.like-btn {
+  gap: 6px;
+  padding: 8px 16px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.toolbar-btn.icon-only {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
 .toolbar-btn:hover {
   background-color: #E2DDD5;
+  color: #111111;
 }
 
 .toolbar-btn.liked {
@@ -188,6 +201,12 @@
 .toolbar-btn.active {
   background-color: #111111;
   color: #FFFFFF;
+}
+
+.toolbar-icon {
+  display: block;
+  flex-shrink: 0;
+  stroke: currentColor;
 }
 
 .toolbar-right-actions {
