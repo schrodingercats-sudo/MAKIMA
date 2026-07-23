@@ -1,0 +1,111 @@
+/* Progressive Image Pipeline CSS */
+.progressive-img-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-color: #121212;
+  border-radius: inherit;
+}
+
+/* Stage 1: Skeleton Shimmer */
+.progressive-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Stage 2: Blur Hash / Tiny Base64 Canvas & Img */
+.progressive-blur-canvas,
+.progressive-blur-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+  filter: blur(12px);
+  transform: scale(1.08); /* avoid white edges from blur */
+  transition: opacity 0.3s ease-out;
+  pointer-events: none;
+}
+
+/* Stage 3: Low-Resolution Transform */
+.progressive-lowres-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3;
+  filter: blur(3px);
+  transition: opacity 0.3s ease-out;
+}
+
+/* Stage 4: Original High-Resolution Main Image (Sharp 100% Quality) */
+.progressive-fullres-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 4;
+  display: block;
+  opacity: 0;
+  filter: none !important;
+  transition: opacity 0.25s ease-out;
+}
+
+.progressive-fullres-img.loaded {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Stage 5: Luxury Editorial Image Fallback */
+.progressive-image-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(24, 24, 28, 0.95) 0%, rgba(14, 14, 16, 0.98) 100%);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: inherit;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 1rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.progressive-fallback-icon {
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.2s ease;
+}
+
+.progressive-fallback-text {
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}

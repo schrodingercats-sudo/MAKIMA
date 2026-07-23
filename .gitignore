@@ -13,6 +13,11 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
+
 # Internal agent logs & temp files
 .agents/
 scripts/

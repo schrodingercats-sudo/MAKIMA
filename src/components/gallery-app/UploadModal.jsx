@@ -4,15 +4,20 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Upload01Icon,
   Cancel01Icon,
-  Image01Icon,
   Delete02Icon
 } from '@hugeicons/core-free-icons';
+
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { invalidateArtworkCache } from '../../lib/redis';
 import './UploadModal.css';
 
 export function UploadModal({ isOpen, onClose, onUploadSuccess }) {
+  const { user, profile } = useAuth();
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [aspectRatio, setAspectRatio] = useState('1.4');
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [title, setTitle] = useState('');
@@ -25,23 +30,17 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile || !selectedFile.type.startsWith('image/')) return;
     setFile(selectedFile);
-    setPreviewUrl(URL.createObjectURL(selectedFile));
-    simulateProgress();
-  };
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPreviewUrl(objectUrl);
 
-  const simulateProgress = () => {
-    setIsUploading(true);
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          return 100;
-        }
-        return prev + 20;
-      });
-    }, 150);
+    // Compute aspect ratio from image natural size
+    const img = new Image();
+    img.src = objectUrl;
+    img.onload = () => {
+      if (img.width && img.height) {
+        setAspectRatio((img.width / img.height).toFixed(1));
+      }
+    };
   };
 
   const handleDrop = (e) => {
@@ -59,31 +58,144 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }) {
     setIsUploading(false);
   };
 
-  const handleSubmit = (e) => {
+  // Generate 20x20 blurred base64 placeholder using offscreen canvas
+  const generateBlurPlaceholder = (imgUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = imgUrl;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 20;
+        canvas.height = 20;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, 20, 20);
+          resolve(canvas.toDataURL('image/webp', 0.2));
+        } else {
+          resolve('data:image/webp;base64,UklGRkAAAABXRUJQVlA4WAoAAAAQAAAAAQAAAC0AQUxQSAwAAAABFwAQAP4B5AIWVlA4IDAAAAAQAgCdASoCAAEAAUAmJaQAA3AA/v7WAAAA');
+        }
+      };
+      img.onerror = () => {
+        resolve('data:image/webp;base64,UklGRkAAAABXRUJQVlA4WAoAAAAQAAAAAQAAAC0AQUxQSAwAAAABFwAQAP4B5AIWVlA4IDAAAAAQAgCdASoCAAEAAUAmJaQAA3AA/v7WAAAA');
+      };
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file && !previewUrl) return;
 
-    const newArtwork = {
-      id: `art-${Date.now()}`,
-      title: title || 'Untitled Makima Creation',
-      artist: 'Makima',
-      artistHandle: '@makima',
-      artistAvatar: '/images/coming-soon.jpg',
-      src: previewUrl || '/images/gallery-1.webp',
-      likes: 1,
-      saves: 0,
-      category,
-      media: 'Illustration',
-      isAnimated: false,
-      aspectRatio: '1.4',
-      tags: ['Makima', 'User Upload', category],
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+    setIsUploading(true);
+    setProgress(20);
 
-    if (onUploadSuccess) {
-      onUploadSuccess(newArtwork);
+    try {
+      let publicImageUrl = previewUrl;
+      let blurPlaceholder = 'data:image/webp;base64,UklGRkAAAABXRUJQVlA4WAoAAAAQAAAAAQAAAC0AQUxQSAwAAAABFwAQAP4B5AIWVlA4IDAAAAAQAgCdASoCAAEAAUAmJaQAA3AA/v7WAAAA';
+
+      // 1. Generate 20x20 base64 blur hash thumbnail
+      try {
+        blurPlaceholder = await generateBlurPlaceholder(previewUrl);
+      } catch (err) {
+        console.warn('Blurhash placeholder generation notice:', err);
+      }
+
+      setProgress(40);
+
+      // 2. Upload file to Supabase Storage 'artworks' bucket if file is selected
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from('artworks')
+          .upload(fileName, file, { contentType: file.type, upsert: true });
+
+        if (uploadErr) {
+          console.warn('Storage upload notice:', uploadErr.message);
+        } else {
+          const { data: pubUrlData } = supabase.storage.from('artworks').getPublicUrl(fileName);
+          if (pubUrlData?.publicUrl) {
+            publicImageUrl = pubUrlData.publicUrl;
+          }
+        }
+      }
+
+      setProgress(70);
+
+      // 3. Insert record in Supabase Database 'artworks' table
+      const newArtworkData = {
+        title: title || 'Untitled Makima Creation',
+        description: description || '',
+        image_url: publicImageUrl,
+        thumbnail_url: publicImageUrl,
+        blur_hash: blurPlaceholder,
+        category: category,
+        media_type: 'Illustration',
+        is_animated: file?.type === 'image/gif' || file?.name?.endsWith('.webp') || false,
+        aspect_ratio: aspectRatio || '1.4',
+        tags: ['Makima', 'User Upload', category],
+        artist_id: user?.id,
+      };
+
+      let createdArtworkRow = null;
+
+      if (user?.id) {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('artworks')
+          .insert(newArtworkData)
+          .select(`
+            *,
+            artist:profiles!artworks_artist_id_fkey(
+              id, display_name, handle, avatar_url
+            )
+          `)
+          .single();
+
+        if (insertErr) {
+          console.warn('DB artwork insert notice:', insertErr.message);
+        } else {
+          createdArtworkRow = inserted;
+        }
+      }
+
+      setProgress(90);
+
+      // 4. Invalidate Redis artwork cache
+      await invalidateArtworkCache();
+
+      setProgress(100);
+
+      // Construct formatted item for UI state
+      const formattedArtwork = {
+        id: createdArtworkRow?.id || `art-${Date.now()}`,
+        title: title || 'Untitled Makima Creation',
+        description: description || '',
+        artist: profile?.display_name || user?.email?.split('@')[0] || 'Makima',
+        artistHandle: profile?.handle || '@makima',
+        artistAvatar: profile?.avatar_url || '/images/coming-soon.jpg',
+        src: publicImageUrl,
+        thumbnailUrl: publicImageUrl,
+        blurHash: blurPlaceholder,
+        likes: 1,
+        saves: 0,
+        category,
+        media: 'Illustration',
+        isAnimated: file?.type === 'image/gif' || false,
+        aspectRatio: aspectRatio || '1.4',
+        tags: ['Makima', 'User Upload', category],
+        createdAt: new Date().toISOString()
+      };
+
+      if (onUploadSuccess) {
+        onUploadSuccess(formattedArtwork);
+      }
+      onClose();
+    } catch (err) {
+      console.warn('Upload artwork exception:', err.message);
+    } finally {
+      setIsUploading(false);
     }
-    onClose();
   };
 
   return (
@@ -158,19 +270,21 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }) {
                 </div>
 
                 {/* Progress Indicator */}
-                <div className="upload-progress-box">
-                  <div className="progress-info">
-                    <span className="file-name">{file?.name || 'Artwork.png'}</span>
-                    <span className="progress-percentage">{progress}%</span>
+                {isUploading && (
+                  <div className="upload-progress-box">
+                    <div className="progress-info">
+                      <span className="file-name">{file?.name || 'Artwork.png'}</span>
+                      <span className="progress-percentage">{progress}%</span>
+                    </div>
+                    <div className="progress-track">
+                      <motion.div
+                        className="progress-bar"
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    </div>
                   </div>
-                  <div className="progress-track">
-                    <motion.div
-                      className="progress-bar"
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.2 }}
-                    />
-                  </div>
-                </div>
+                )}
 
                 {/* Artwork Metadata Inputs */}
                 <div className="form-fields-container">
@@ -223,7 +337,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }) {
               <button
                 type="submit"
                 className="publish-btn"
-                disabled={!previewUrl || isUploading || progress < 100}
+                disabled={!previewUrl || isUploading}
               >
                 {isUploading ? `Uploading (${progress}%)` : 'Publish Artwork →'}
               </button>

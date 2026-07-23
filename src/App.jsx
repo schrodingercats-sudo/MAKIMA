@@ -18,11 +18,13 @@ import ImageModal from './components/ImageModal';
 import ReportModal from './components/ReportModal';
 import ComingSoonModal from './components/ComingSoonModal';
 import GalleryPage from './components/gallery-app/GalleryPage';
+import AuthModal from './components/gallery-app/AuthModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
 const SECTIONS = ['hero', 'story', 'profile', 'relationships', 'timeline', 'quotes', 'legacy'];
 
-export function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState(() => {
     return window.location.pathname.startsWith('/gallery') ? 'gallery' : 'tribute';
   });
@@ -31,7 +33,15 @@ export function App() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [comingSoonInfo, setComingSoonInfo] = useState({ isOpen: false, title: '', message: '' });
   const [securityPassed, setSecurityPassed] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('signin');
   const lenisRef = useRef(null);
+  const { user } = useAuth();
+
+  const handleOpenAuthModal = (mode = 'signin') => {
+    setAuthModalMode(mode);
+    setAuthModalOpen(true);
+  };
 
   // Sync URL history state
   useEffect(() => {
@@ -180,6 +190,7 @@ export function App() {
             setCurrentView('tribute');
             window.scrollTo(0, 0);
           }}
+          onOpenAuth={(mode) => handleOpenAuthModal(mode)}
         />
       ) : (
         /* MAIN LANDING TRIBUTE PAGE VIEW */
@@ -241,8 +252,24 @@ export function App() {
           />
         </>
       )}
+
+      {/* Global Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </div>
   );
 }
 
+export function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
 export default App;
+

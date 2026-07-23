@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -9,7 +9,6 @@ import {
   Bookmark02Icon,
   Settings02Icon,
   Search01Icon,
-  GridIcon,
   Upload01Icon,
   FavouriteIcon,
   ArrowLeft02Icon,
@@ -17,24 +16,32 @@ import {
   ArrowDown01Icon
 } from '@hugeicons/core-free-icons';
 
-import { INITIAL_ARTWORKS, PAGINATED_MORE_ARTWORKS, CURRENT_USER } from '../../data/galleryData';
+import { INITIAL_ARTWORKS, CURRENT_USER } from '../../data/galleryData';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { getCachedTrendingArtworks, cacheTrendingArtworks, checkActionRateLimit } from '../../lib/redis';
+import ProgressiveImage from './ProgressiveImage';
 import ProfileDrawer from './ProfileDrawer';
 import UploadModal from './UploadModal';
 import ArtworkModal from './ArtworkModal';
 import UserProfileView from './UserProfileView';
 import './GalleryPage.css';
 
-export function GalleryPage({ onBackToTribute }) {
+const PAGE_SIZE = 20;
+
+export function GalleryPage({ onBackToTribute, onOpenAuth }) {
+  const { user, profile } = useAuth();
+
   // Global State Management
-  const [artworks, setArtworks] = useState(INITIAL_ARTWORKS);
-  const [currentUser, setCurrentUser] = useState(CURRENT_USER);
+  const [artworks, setArtworks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [activeProfileView, setActiveProfileView] = useState(null); // username string or null
 
   // Interactive Filters State
-  const [activeTab, setActiveTab] = useState('For You'); // 'For You' | 'Trending' | 'Latest' | 'Following'
+  const [activeTab, setActiveTab] = useState('For You'); // 'For You' | 'Trending' | 'Latest' | 'Following' | 'Saved'
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedMedia, setSelectedMedia] = useState('All Media');
   const [sortBy, setSortBy] = useState('Trending');
@@ -45,26 +52,292 @@ export function GalleryPage({ onBackToTribute }) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const searchInputRef = useRef(null);
 
-  // Interaction State
-  const [likedArtworks, setLikedArtworks] = useState(new Set(['art-1', 'art-3', 'art-6']));
-  const [savedArtworks, setSavedArtworks] = useState(new Set(['art-2', 'art-3']));
+  // User Likes & Saves (Bookmarks) Sets
+  const [likedArtworks, setLikedArtworks] = useState(new Set());
+  const [savedArtworks, setSavedArtworks] = useState(new Set());
 
   // Infinite Scroll Pagination State
+  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollContainerRef = useRef(null);
+
+  // Helper to map DB row to UI format
+  const mapDbRowToArtwork = useCallback((art) => {
+    const artistObj = art.artist || art.profiles || {};
+    return {
+      id: art.id,
+      title: art.title,
+      description: art.description || '',
+      artist: artistObj.display_name || art.artist_name || 'Kuroi',
+      artistHandle: artistObj.handle ? (artistObj.handle.startsWith('@') ? artistObj.handle : `@${artistObj.handle}`) : '@kuroi_art',
+      artistAvatar: artistObj.avatar_url || '/images/coming-soon.jpg',
+      artistId: art.artist_id,
+      src: art.image_url || '/images/gallery-1.webp',
+      thumbnailUrl: art.thumbnail_url || art.image_url,
+      blurHash: art.blur_hash || '',
+      likes: art.likes_count ?? 0,
+      saves: art.saves_count ?? 0,
+      category: art.category || 'Editorial',
+      media: art.media_type || 'Illustration',
+      isAnimated: art.is_animated ?? false,
+      aspectRatio: art.aspect_ratio || '1.4',
+      tags: art.tags || [],
+      createdAt: art.created_at || new Date().toISOString()
+    };
+  }, []);
+
+  // Primary Fetch Function from Supabase with Redis caching for default query
+  const fetchArtworks = useCallback(async (pageIndex = 0, append = false) => {
+    if (pageIndex === 0 && !append) {
+      setLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+
+    try {
+      // Check Redis cache for page 0 default trending view
+      if (
+        pageIndex === 0 &&
+        activeTab === 'For You' &&
+        selectedCategory === 'All Categories' &&
+        selectedMedia === 'All Media' &&
+        !debouncedSearch
+      ) {
+        const cached = await getCachedTrendingArtworks();
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          setArtworks(cached);
+          setLoading(false);
+          setIsLoadingMore(false);
+          // Still fetch fresh data asynchronously to update cache
+        }
+      }
+
+      let query = supabase
+        .from('artworks')
+        .select(`
+          *,
+          artist:profiles!artworks_artist_id_fkey(
+            id,
+            display_name,
+            handle,
+            avatar_url,
+            bio
+          )
+        `);
+
+      // Category filter
+      if (selectedCategory !== 'All Categories') {
+        query = query.eq('category', selectedCategory);
+      }
+
+      // Media filter
+      if (selectedMedia !== 'All Media') {
+        query = query.eq('media_type', selectedMedia);
+      }
+
+      // Tab filter
+      if (activeTab === 'Latest' || sortBy === 'Latest') {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('likes_count', { ascending: false });
+      }
+
+      // Search query filter (Full Text Search utilizing PostgreSQL search_vector GIN index with fallback)
+      if (debouncedSearch) {
+        const formattedSearchQuery = debouncedSearch.trim();
+        if (formattedSearchQuery) {
+          try {
+            query = query.textSearch('search_vector', formattedSearchQuery, {
+              type: 'websearch',
+              config: 'english'
+            });
+          } catch (err) {
+            console.warn('textSearch parameter format error, using fallback filter:', err);
+            const safeTerm = `%${formattedSearchQuery}%`;
+            query = query.or(`title.ilike.${safeTerm},description.ilike.${safeTerm}`);
+          }
+        }
+      }
+
+      const from = pageIndex * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.range(from, to);
+
+      let { data, error } = await query;
+
+      // Fallback query if Supabase textSearch encounters a backend error
+      if (error && debouncedSearch) {
+        console.warn('Supabase search_vector textSearch query notice, executing fallback .or search query:', error.message);
+        let fallbackQuery = supabase
+          .from('artworks')
+          .select(`
+            *,
+            artist:profiles!artworks_artist_id_fkey(
+              id,
+              display_name,
+              handle,
+              avatar_url,
+              bio
+            )
+          `);
+
+        if (selectedCategory !== 'All Categories') {
+          fallbackQuery = fallbackQuery.eq('category', selectedCategory);
+        }
+        if (selectedMedia !== 'All Media') {
+          fallbackQuery = fallbackQuery.eq('media_type', selectedMedia);
+        }
+        if (activeTab === 'Latest' || sortBy === 'Latest') {
+          fallbackQuery = fallbackQuery.order('created_at', { ascending: false });
+        } else {
+          fallbackQuery = fallbackQuery.order('likes_count', { ascending: false });
+        }
+
+        const safeTerm = `%${debouncedSearch.trim()}%`;
+        fallbackQuery = fallbackQuery.or(`title.ilike.${safeTerm},description.ilike.${safeTerm}`);
+        fallbackQuery = fallbackQuery.range(from, to);
+
+        const fallbackRes = await fallbackQuery;
+        if (fallbackRes.data && !fallbackRes.error) {
+          data = fallbackRes.data;
+          error = null;
+        }
+      }
+
+      if (error) {
+        console.warn('Supabase fetch query notice:', error.message);
+        // Fallback to initial mock data if DB table isn't ready
+        if (pageIndex === 0 && (!artworks || artworks.length === 0)) {
+          let mockResults = INITIAL_ARTWORKS;
+          if (debouncedSearch) {
+            const q = debouncedSearch.toLowerCase().trim();
+            mockResults = INITIAL_ARTWORKS.filter((art) =>
+              art.title?.toLowerCase().includes(q) ||
+              art.description?.toLowerCase().includes(q) ||
+              art.artist?.toLowerCase().includes(q) ||
+              (art.tags && art.tags.some((t) => t.toLowerCase().includes(q)))
+            );
+          }
+          setArtworks(mockResults);
+        }
+        setHasMore(false);
+      } else if (data) {
+        const formatted = data.map(mapDbRowToArtwork);
+        if (formatted.length < PAGE_SIZE) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        if (append) {
+          setArtworks((prev) => {
+            const existingIds = new Set(prev.map((a) => a.id));
+            const newItems = formatted.filter((a) => !existingIds.has(a.id));
+            return [...prev, ...newItems];
+          });
+        } else {
+          setArtworks(formatted.length > 0 ? formatted : INITIAL_ARTWORKS);
+          if (
+            pageIndex === 0 &&
+            activeTab === 'For You' &&
+            selectedCategory === 'All Categories' &&
+            selectedMedia === 'All Media' &&
+            !debouncedSearch &&
+            formatted.length > 0
+          ) {
+            cacheTrendingArtworks(formatted);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching artworks:', err.message);
+      if (pageIndex === 0 && (!artworks || artworks.length === 0)) {
+        setArtworks(INITIAL_ARTWORKS);
+      }
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [activeTab, selectedCategory, selectedMedia, sortBy, debouncedSearch, mapDbRowToArtwork]);
+
+  // Initial & Filter Change Trigger
+  useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    fetchArtworks(0, false);
+  }, [fetchArtworks]);
+
+  // Fetch User Liked & Saved Artworks from Supabase when user logged in
+  useEffect(() => {
+    if (!user) {
+      setLikedArtworks(new Set());
+      setSavedArtworks(new Set());
+      return;
+    }
+
+    const fetchUserInteractions = async () => {
+      try {
+        const [{ data: likesData }, { data: savesData }] = await Promise.all([
+          supabase.from('likes').select('artwork_id').eq('user_id', user.id),
+          supabase.from('bookmarks').select('artwork_id').eq('user_id', user.id),
+        ]);
+
+        if (likesData) {
+          setLikedArtworks(new Set(likesData.map((l) => l.artwork_id)));
+        }
+        if (savesData) {
+          setSavedArtworks(new Set(savesData.map((s) => s.artwork_id)));
+        }
+      } catch (err) {
+        console.warn('Error fetching user likes/saves:', err.message);
+      }
+    };
+
+    fetchUserInteractions();
+  }, [user]);
+
+  // Supabase Realtime Subscription for live Like count updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('public-artworks-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'artworks' },
+        (payload) => {
+          if (payload?.new) {
+            setArtworks((prev) =>
+              prev.map((a) =>
+                a.id === payload.new.id
+                  ? {
+                      ...a,
+                      likes: payload.new.likes_count ?? a.likes,
+                      saves: payload.new.saves_count ?? a.saves,
+                    }
+                  : a
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Auto-detect /gallery/artwork/:id URL on mount
   useEffect(() => {
     const path = window.location.pathname;
     if (path.includes('/gallery/artwork/')) {
       const artId = path.split('/gallery/artwork/')[1];
-      const match = INITIAL_ARTWORKS.find((a) => a.id === artId);
+      const match = artworks.find((a) => a.id === artId) || INITIAL_ARTWORKS.find((a) => a.id === artId);
       if (match) {
         setSelectedArtwork(match);
       }
     }
-  }, []);
+  }, [artworks]);
 
   // Debounce search input (~300ms)
   useEffect(() => {
@@ -89,98 +362,148 @@ export function GalleryPage({ onBackToTribute }) {
   // Infinite Scroll Listener (~80% scroll height)
   useEffect(() => {
     const handleScroll = () => {
-      if (!hasMore || isLoadingMore) return;
+      if (!hasMore || isLoadingMore || loading) return;
 
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = window.innerHeight;
 
       if ((scrollTop + clientHeight) / scrollHeight >= 0.8) {
-        setIsLoadingMore(true);
-        setTimeout(() => {
-          setArtworks((prev) => [...prev, ...PAGINATED_MORE_ARTWORKS]);
-          setHasMore(false); // All paginated items loaded
-          setIsLoadingMore(false);
-        }, 800);
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchArtworks(nextPage, true);
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasMore, isLoadingMore]);
+  }, [hasMore, isLoadingMore, loading, page, fetchArtworks]);
 
-  // Like Toggle Handler
-  const handleToggleLike = (artId) => {
+  // Like Toggle Handler with Auth protection & Redis rate limiting
+  const handleToggleLike = async (artId) => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth('signin');
+      return;
+    }
+
+    // Check Redis rate limit
+    const rateCheck = await checkActionRateLimit(user.id, 'like');
+    if (!rateCheck.allowed) {
+      alert('Action rate limit exceeded. Please wait a moment before liking again.');
+      return;
+    }
+
+    const isLiked = likedArtworks.has(artId);
+
+    // Optimistic UI update
     setLikedArtworks((prev) => {
       const next = new Set(prev);
-      if (next.has(artId)) {
-        next.delete(artId);
-      } else {
-        next.add(artId);
-      }
+      if (isLiked) next.delete(artId);
+      else next.add(artId);
       return next;
     });
+
+    setArtworks((prev) =>
+      prev.map((a) =>
+        a.id === artId ? { ...a, likes: Math.max(0, a.likes + (isLiked ? -1 : 1)) } : a
+      )
+    );
+
+    try {
+      if (isLiked) {
+        await supabase.from('likes').delete().eq('user_id', user.id).eq('artwork_id', artId);
+      } else {
+        await supabase.from('likes').insert({ user_id: user.id, artwork_id: artId });
+      }
+    } catch (err) {
+      console.warn('Error toggling like:', err.message);
+    }
   };
 
-  // Save Toggle Handler
-  const handleToggleSave = (artId) => {
+  // Save Toggle Handler with Auth protection & Redis rate limiting
+  const handleToggleSave = async (artId) => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth('signin');
+      return;
+    }
+
+    const rateCheck = await checkActionRateLimit(user.id, 'save');
+    if (!rateCheck.allowed) {
+      alert('Action rate limit exceeded. Please wait a moment.');
+      return;
+    }
+
+    const isSaved = savedArtworks.has(artId);
+
+    // Optimistic UI update
     setSavedArtworks((prev) => {
       const next = new Set(prev);
-      if (next.has(artId)) {
-        next.delete(artId);
-      } else {
-        next.add(artId);
-      }
+      if (isSaved) next.delete(artId);
+      else next.add(artId);
       return next;
     });
+
+    setArtworks((prev) =>
+      prev.map((a) =>
+        a.id === artId ? { ...a, saves: Math.max(0, a.saves + (isSaved ? -1 : 1)) } : a
+      )
+    );
+
+    try {
+      if (isSaved) {
+        await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('artwork_id', artId);
+      } else {
+        await supabase.from('bookmarks').insert({ user_id: user.id, artwork_id: artId });
+      }
+    } catch (err) {
+      console.warn('Error toggling save:', err.message);
+    }
   };
 
-  // Filtered & Sorted Artworks Pipeline
+  // Handle protected Upload action
+  const handleOpenUpload = () => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth('signin');
+      return;
+    }
+    setUploadOpen(true);
+  };
+
+  // Filtered Artworks in memory
   const filteredArtworks = useMemo(() => {
     return artworks.filter((art) => {
-      // Search query filter
-      if (debouncedSearch) {
-        const query = debouncedSearch.toLowerCase();
-        const matchesTitle = art.title.toLowerCase().includes(query);
-        const matchesArtist = art.artist.toLowerCase().includes(query) || art.artistHandle.toLowerCase().includes(query);
-        const matchesTag = art.tags?.some((t) => t.toLowerCase().includes(query));
-        if (!matchesTitle && !matchesArtist && !matchesTag) return false;
+      if (activeTab === 'Saved') {
+        return savedArtworks.has(art.id);
       }
-
-      // Category filter
-      if (selectedCategory !== 'All Categories' && art.category !== selectedCategory) {
-        return false;
-      }
-
-      // Media filter
-      if (selectedMedia !== 'All Media' && art.media !== selectedMedia) {
-        return false;
-      }
-
-      // Filter Tabs
-      if (activeTab === 'Trending') {
-        return art.likes > 3000;
-      } else if (activeTab === 'Following') {
-        return art.artist === 'akame_29' || art.artist === 'Kuroi' || art.artist === 'silentgraphy';
-      }
-
       return true;
-    }).sort((a, b) => {
-      if (sortBy === 'Latest') {
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      } else if (sortBy === 'Most Liked') {
-        return b.likes - a.likes;
-      }
-      return b.likes - a.likes; // Default Trending
     });
-  }, [artworks, debouncedSearch, selectedCategory, selectedMedia, activeTab, sortBy]);
+  }, [artworks, activeTab, savedArtworks]);
+
+  const currentUserData = useMemo(() => {
+    if (profile) {
+      return {
+        name: profile.display_name || user?.email?.split('@')[0] || CURRENT_USER.name,
+        username: profile.handle?.replace(/^@/, '') || CURRENT_USER.username,
+        avatar: profile.avatar_url || CURRENT_USER.avatar,
+        bio: profile.bio || CURRENT_USER.bio,
+        website: profile.website || CURRENT_USER.website,
+        location: profile.location || CURRENT_USER.location,
+        social: profile.social_links || CURRENT_USER.social,
+        followingCount: profile.following_count ?? 142,
+        followersCount: profile.followers_count ?? '48.9K',
+        artworksCount: profile.artworks_count ?? 38,
+        likesCount: profile.likes_count ?? 1240,
+      };
+    }
+    return CURRENT_USER;
+  }, [profile, user]);
 
   // Render User Profile Page if navigating to /profile/:username
   if (activeProfileView) {
     return (
       <UserProfileView
         username={activeProfileView}
-        currentUser={currentUser}
+        currentUser={currentUserData}
         artworks={artworks}
         onBack={() => setActiveProfileView(null)}
         onOpenSettings={() => {
@@ -188,6 +511,7 @@ export function GalleryPage({ onBackToTribute }) {
           setProfileOpen(true);
         }}
         onSelectArtwork={(art) => setSelectedArtwork(art)}
+        onOpenAuth={onOpenAuth}
       />
     );
   }
@@ -216,15 +540,34 @@ export function GalleryPage({ onBackToTribute }) {
           <button className="header-nav-link" onClick={onBackToTribute}>About</button>
         </nav>
 
-        {/* Right Header Avatar Trigger */}
+        {/* Right Header Avatar / Auth Trigger */}
         <div className="header-right">
-          <button
-            className="top-profile-avatar-btn"
-            onClick={() => setProfileOpen(!profileOpen)}
-            aria-label="Toggle Profile Menu"
-          >
-            <img src={currentUser.avatar} alt={currentUser.name} className="top-avatar-img" />
-          </button>
+          {user ? (
+            <button
+              className="top-profile-avatar-btn"
+              onClick={() => setProfileOpen(!profileOpen)}
+              aria-label="Toggle Profile Menu"
+            >
+              <img src={currentUserData.avatar} alt={currentUserData.name} className="top-avatar-img" />
+            </button>
+          ) : (
+            <button
+              className="auth-sign-in-nav-btn"
+              onClick={() => onOpenAuth && onOpenAuth('signin')}
+              style={{
+                backgroundColor: 'var(--color-primary-red, #A63D3D)',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 
@@ -240,15 +583,23 @@ export function GalleryPage({ onBackToTribute }) {
             <span className="sidebar-label">Home</span>
           </button>
 
-          <button className="sidebar-item" onClick={() => setActiveTab('Following')} title="People">
+          <button
+            className={`sidebar-item ${activeTab === 'Following' ? 'active' : ''}`}
+            onClick={() => setActiveTab('Following')}
+            title="People"
+          >
             <HugeiconsIcon icon={UserGroupIcon} size={20} />
             <span className="sidebar-label">People</span>
           </button>
 
-          <button className="sidebar-item active" title="Gallery">
+          <button
+            className={`sidebar-item ${activeTab === 'For You' ? 'active' : ''}`}
+            onClick={() => setActiveTab('For You')}
+            title="Gallery"
+          >
             <HugeiconsIcon icon={Image01Icon} size={20} />
             <span className="sidebar-label">Gallery</span>
-            <span className="sidebar-active-pill" />
+            {activeTab === 'For You' && <span className="sidebar-active-pill" />}
           </button>
 
           <button className="sidebar-item" onClick={onBackToTribute} title="Timeline">
@@ -256,9 +607,14 @@ export function GalleryPage({ onBackToTribute }) {
             <span className="sidebar-label">Timeline</span>
           </button>
 
-          <button className="sidebar-item" onClick={() => setActiveTab('Saved')} title="Saved">
+          <button
+            className={`sidebar-item ${activeTab === 'Saved' ? 'active' : ''}`}
+            onClick={() => setActiveTab('Saved')}
+            title="Saved"
+          >
             <HugeiconsIcon icon={Bookmark02Icon} size={20} />
             <span className="sidebar-label">Saved</span>
+            {activeTab === 'Saved' && <span className="sidebar-active-pill" />}
           </button>
         </nav>
 
@@ -274,7 +630,10 @@ export function GalleryPage({ onBackToTribute }) {
 
           <button
             className="sidebar-item settings-item"
-            onClick={() => setProfileOpen(true)}
+            onClick={() => {
+              if (!user) onOpenAuth && onOpenAuth('signin');
+              else setProfileOpen(true);
+            }}
             title="Settings"
           >
             <HugeiconsIcon icon={Settings02Icon} size={20} />
@@ -361,19 +720,32 @@ export function GalleryPage({ onBackToTribute }) {
             </div>
 
             {/* Upload Button Trigger */}
-            <button className="upload-trigger-primary-btn" onClick={() => setUploadOpen(true)}>
+            <button className="upload-trigger-primary-btn" onClick={handleOpenUpload}>
               <HugeiconsIcon icon={Upload01Icon} size={16} />
               <span>Upload</span>
             </button>
           </div>
         </div>
 
-        {/* MASONRY GALLERY GRID */}
-        {filteredArtworks.length === 0 ? (
+        {/* MASONRY GALLERY GRID WITH PROGRESSIVE IMAGES */}
+        {loading ? (
+          <div className="infinite-scroll-spinner-row">
+            <div className="spinner-dots" />
+            <span>Loading live Supabase artworks...</span>
+          </div>
+        ) : filteredArtworks.length === 0 ? (
           <div className="empty-gallery-state">
             <h3>No artworks found matching "{debouncedSearch}"</h3>
             <p>Try clearing your search query or selecting a different category filter.</p>
-            <button className="reset-filter-btn" onClick={() => { setSearchInput(''); setSelectedCategory('All Categories'); setActiveTab('For You'); }}>
+            <button
+              className="reset-filter-btn"
+              onClick={() => {
+                setSearchInput('');
+                setSelectedCategory('All Categories');
+                setSelectedMedia('All Media');
+                setActiveTab('For You');
+              }}
+            >
               Reset Filters
             </button>
           </div>
@@ -395,7 +767,15 @@ export function GalleryPage({ onBackToTribute }) {
                   onClick={() => setSelectedArtwork(art)}
                 >
                   <div className="card-image-wrapper">
-                    <img src={art.src} alt={art.title} className="artwork-image" loading="lazy" />
+                    {/* Render with Stage 4 Progressive Image Component */}
+                    <ProgressiveImage
+                      src={art.src}
+                      lowResSrc={art.thumbnailUrl}
+                      blurHash={art.blurHash}
+                      alt={art.title}
+                      aspectRatio={art.aspectRatio}
+                      className="artwork-image-progressive"
+                    />
 
                     {/* Animated WebP / Video Badge */}
                     {art.isAnimated && (
@@ -444,7 +824,7 @@ export function GalleryPage({ onBackToTribute }) {
 
                       <div className="card-likes-count">
                         <HugeiconsIcon icon={FavouriteIcon} size={13} />
-                        <span>{(art.likes / 1000).toFixed(1)}K</span>
+                        <span>{(art.likes >= 1000 ? `${(art.likes / 1000).toFixed(1)}K` : art.likes)}</span>
                       </div>
                     </div>
                   </div>
@@ -484,14 +864,20 @@ export function GalleryPage({ onBackToTribute }) {
           <HugeiconsIcon icon={Image01Icon} size={20} />
           <span>Gallery</span>
         </button>
-        <button className="mobile-nav-item upload-btn" onClick={() => setUploadOpen(true)}>
+        <button className="mobile-nav-item upload-btn" onClick={handleOpenUpload}>
           <HugeiconsIcon icon={Upload01Icon} size={22} />
         </button>
         <button className="mobile-nav-item" onClick={() => setActiveTab('Saved')}>
           <HugeiconsIcon icon={Bookmark02Icon} size={20} />
           <span>Saved</span>
         </button>
-        <button className="mobile-nav-item" onClick={() => setProfileOpen(true)}>
+        <button
+          className="mobile-nav-item"
+          onClick={() => {
+            if (!user) onOpenAuth && onOpenAuth('signin');
+            else setProfileOpen(true);
+          }}
+        >
           <HugeiconsIcon icon={Settings02Icon} size={20} />
           <span>Profile</span>
         </button>
@@ -501,12 +887,12 @@ export function GalleryPage({ onBackToTribute }) {
       <ProfileDrawer
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
-        currentUser={currentUser}
+        currentUser={currentUserData}
         onNavigateProfile={(uname) => {
           setProfileOpen(false);
           setActiveProfileView(uname);
         }}
-        onUpdateUser={(updated) => setCurrentUser(updated)}
+        onUpdateUser={() => {}}
       />
 
       {/* UPLOAD MODAL */}
@@ -514,7 +900,7 @@ export function GalleryPage({ onBackToTribute }) {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onUploadSuccess={(newArt) => {
-          setArtworks([newArt, ...artworks]);
+          setArtworks((prev) => [newArt, ...prev]);
         }}
       />
 
@@ -537,6 +923,7 @@ export function GalleryPage({ onBackToTribute }) {
           setActiveProfileView(uname);
         }}
         onSelectArtwork={(art) => setSelectedArtwork(art)}
+        onOpenAuth={onOpenAuth}
       />
     </div>
   );

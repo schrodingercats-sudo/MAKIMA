@@ -7,11 +7,7 @@ import {
   Bookmark02Icon,
   Share01Icon,
   Comment01Icon,
-  UserCheck01Icon,
-  UserAdd01Icon,
   ArrowLeft02Icon,
-  ArrowRight02Icon,
-  SparklesIcon,
   MoreHorizontalIcon,
   Maximize01Icon,
   Download01Icon,
@@ -19,6 +15,11 @@ import {
   Link01Icon,
   ArrowDown01Icon
 } from '@hugeicons/core-free-icons';
+
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { checkActionRateLimit } from '../../lib/redis';
+import ProgressiveImage from './ProgressiveImage';
 import './ArtworkModal.css';
 
 export function ArtworkModal({
@@ -30,15 +31,13 @@ export function ArtworkModal({
   onToggleLike,
   onToggleSave,
   onNavigateArtist,
-  onSelectArtwork
+  onSelectArtwork,
+  onOpenAuth
 }) {
+  const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState([
-    { id: 1, name: 'Denji', handle: '@denji_chainsaw', avatar: '/images/p1.jpg', text: 'Makima-san is truly absolute...' },
-    { id: 2, name: 'Aki Hayakawa', handle: '@aki_fox', avatar: '/images/p2.jpg', text: 'Contract acknowledged.' },
-    { id: 3, name: 'Power', handle: '@power_blood', avatar: '/images/p3.jpg', text: 'Where nose?' }
-  ]);
+  const [comments, setComments] = useState([]);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExpandedImgOpen, setIsExpandedImgOpen] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -60,27 +59,115 @@ export function ArtworkModal({
 
   const categoryOptions = ['Anime', 'Editorial', 'Illustration', 'Manga', 'Concept'];
 
-  // Preload image and sync History API
+  // Fetch comments and follow status from Supabase
   useEffect(() => {
-    if (artwork) {
-      setImageLoaded(false);
-      setShowMoreMenu(false);
-      setShowCategoryMenu(false);
-      setIsExpandedImgOpen(false);
-      setSelectedCategory(artwork.category || 'Anime');
+    if (!artwork) return;
 
-      const img = new Image();
-      img.src = artwork.src;
-      img.onload = () => setImageLoaded(true);
+    setImageLoaded(false);
+    setShowMoreMenu(false);
+    setShowCategoryMenu(false);
+    setIsExpandedImgOpen(false);
+    setSelectedCategory(artwork.category || 'Anime');
 
-      const targetPath = `/gallery/artwork/${artwork.id}`;
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ artworkId: artwork.id }, '', targetPath);
-      }
+    const targetPath = `/gallery/artwork/${artwork.id}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ artworkId: artwork.id }, '', targetPath);
     }
-  }, [artwork]);
 
-  // Handle History API popstate, Esc key, Left/Right arrow keys
+    // Fetch comments for this artwork
+    const fetchComments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id,
+            user:profiles!comments_user_id_fkey(
+              display_name,
+              handle,
+              avatar_url
+            )
+          `)
+          .eq('artwork_id', artwork.id)
+          .order('created_at', { ascending: true });
+
+        if (!error && data) {
+          const formatted = data.map((c) => ({
+            id: c.id,
+            name: c.user?.display_name || 'Fan',
+            handle: c.user?.handle ? (c.user.handle.startsWith('@') ? c.user.handle : `@${c.user.handle}`) : '@fan',
+            avatar: c.user?.avatar_url || '/images/coming-soon.jpg',
+            text: c.content
+          }));
+          setComments(formatted);
+        } else {
+          // Fallback mock comments
+          setComments([
+            { id: 1, name: 'Denji', handle: '@denji_chainsaw', avatar: '/images/p1.jpg', text: 'Makima-san is truly absolute...' },
+            { id: 2, name: 'Aki Hayakawa', handle: '@aki_fox', avatar: '/images/p2.jpg', text: 'Contract acknowledged.' },
+            { id: 3, name: 'Power', handle: '@power_blood', avatar: '/images/p3.jpg', text: 'Where nose?' }
+          ]);
+        }
+      } catch (err) {
+        console.warn('Error fetching artwork comments:', err.message);
+      }
+    };
+
+    // Check follow status if logged in
+    const checkFollowStatus = async () => {
+      if (!user || !artwork.artistId) return;
+      try {
+        const { data } = await supabase
+          .from('follows')
+          .select('*')
+          .eq('follower_id', user.id)
+          .eq('following_id', artwork.artistId)
+          .single();
+        if (data) setIsFollowing(true);
+        else setIsFollowing(false);
+      } catch (err) {
+        setIsFollowing(false);
+      }
+    };
+
+    fetchComments();
+    checkFollowStatus();
+
+    // Supabase Realtime Subscription for incoming comments
+    const channel = supabase
+      .channel(`comments:${artwork.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comments', filter: `artwork_id=eq.${artwork.id}` },
+        async (payload) => {
+          if (payload?.new) {
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('display_name, handle, avatar_url')
+              .eq('id', payload.new.user_id)
+              .single();
+
+            const newComment = {
+              id: payload.new.id,
+              name: userData?.display_name || 'Fan',
+              handle: userData?.handle ? (userData.handle.startsWith('@') ? userData.handle : `@${userData.handle}`) : '@fan',
+              avatar: userData?.avatar_url || '/images/coming-soon.jpg',
+              text: payload.new.content
+            };
+            setComments((prev) => [...prev, newComment]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [artwork, user]);
+
+  // Keyboard navigation & History API popstate
   useEffect(() => {
     if (!artwork) return;
 
@@ -121,7 +208,7 @@ export function ArtworkModal({
     };
   }, [artwork, allArtworks, isExpandedImgOpen, showMoreMenu, showCategoryMenu, onClose, onSelectArtwork]);
 
-  // Partition recommendations into Side Column & Bottom Feed
+  // Recommendations partition
   const { sideArtworks, bottomArtworks } = useMemo(() => {
     if (!artwork || !allArtworks.length) return { sideArtworks: [], bottomArtworks: [] };
 
@@ -139,21 +226,74 @@ export function ArtworkModal({
     setTimeout(() => setToastMessage(''), 2500);
   };
 
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    setComments([
-      ...comments,
-      {
-        id: Date.now(),
-        name: 'You (Makima)',
-        handle: '@makima',
-        avatar: '/images/coming-soon.jpg',
-        text: commentText
-      }
-    ]);
+
+    if (!user) {
+      if (onOpenAuth) onOpenAuth('signin');
+      return;
+    }
+
+    const rateCheck = await checkActionRateLimit(user.id, 'comment');
+    if (!rateCheck.allowed) {
+      showToast('Comment rate limit exceeded. Please wait a moment.');
+      return;
+    }
+
+    const newCommentObj = {
+      id: Date.now(),
+      name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'You',
+      handle: user.user_metadata?.handle || '@user',
+      avatar: '/images/coming-soon.jpg',
+      text: commentText
+    };
+
+    // Optimistic UI append
+    setComments((prev) => [...prev, newCommentObj]);
+    const textToInsert = commentText;
     setCommentText('');
-    showToast('Comment posted!');
+
+    try {
+      await supabase.from('comments').insert({
+        artwork_id: artwork.id,
+        user_id: user.id,
+        content: textToInsert
+      });
+      showToast('Comment posted!');
+    } catch (err) {
+      console.warn('Error inserting comment:', err.message);
+    }
+  };
+
+  const handleToggleFollow = async () => {
+    if (!user) {
+      if (onOpenAuth) onOpenAuth('signin');
+      return;
+    }
+
+    if (!artwork.artistId || artwork.artistId === user.id) return;
+
+    const rateCheck = await checkActionRateLimit(user.id, 'follow');
+    if (!rateCheck.allowed) {
+      showToast('Action rate limit exceeded.');
+      return;
+    }
+
+    const nextState = !isFollowing;
+    setIsFollowing(nextState);
+
+    try {
+      if (nextState) {
+        await supabase.from('follows').insert({ follower_id: user.id, following_id: artwork.artistId });
+        showToast(`Following @${artwork.artistHandle}`);
+      } else {
+        await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', artwork.artistId);
+        showToast(`Unfollowed @${artwork.artistHandle}`);
+      }
+    } catch (err) {
+      console.warn('Error toggling follow:', err.message);
+    }
   };
 
   const handleRecommendationClick = (selectedArt) => {
@@ -203,35 +343,27 @@ export function ArtworkModal({
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* MAIN PIN ROW: [Pin Detail Card] + [Right 2-Col Side Grid] */}
+          {/* MAIN PIN ROW */}
           <div className="pin-detail-main-row">
             {/* PIN DETAIL CARD */}
             <div className="pinterest-pin-card">
-              {/* Left Side: Artwork Image Container */}
+              {/* Left Side: Artwork Image Container with Progressive Loading */}
               <div className="pin-media-box">
                 <button className="pin-back-arrow-btn" onClick={onClose} title="Back to Gallery">
                   <HugeiconsIcon icon={ArrowLeft02Icon} size={20} />
                 </button>
 
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={artwork.id}
-                    className="pin-image-wrapper"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: imageLoaded ? 1 : 0.4 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <img
-                      src={artwork.src}
-                      alt={artwork.title}
-                      className="pin-exact-image"
-                      onClick={() => setIsExpandedImgOpen(true)}
-                    />
-                  </motion.div>
-                </AnimatePresence>
+                <div className="pin-image-wrapper" onClick={() => setIsExpandedImgOpen(true)}>
+                  <ProgressiveImage
+                    src={artwork.src}
+                    lowResSrc={artwork.thumbnailUrl}
+                    blurHash={artwork.blurHash}
+                    alt={artwork.title}
+                    aspectRatio={artwork.aspectRatio}
+                    className="pin-exact-image"
+                  />
+                </div>
 
-                {/* Functional Expand Button */}
                 <button
                   className="pin-expand-btn"
                   onClick={() => setIsExpandedImgOpen(true)}
@@ -241,12 +373,11 @@ export function ArtworkModal({
                 </button>
               </div>
 
-              {/* Right Side: Header Toolbar, Title, Artist & Discussion Pane */}
+              {/* Right Side: Details Pane */}
               <div className="pin-details-box">
                 {/* Top Action Toolbar */}
                 <div className="pinterest-action-toolbar">
                   <div className="toolbar-left-actions">
-                    {/* Functional Like Button */}
                     <button
                       className={`toolbar-btn like-btn ${isLiked ? 'liked' : ''}`}
                       onClick={() => {
@@ -259,7 +390,6 @@ export function ArtworkModal({
                       <span className="like-count">{artwork.likes + (isLiked ? 1 : 0)}</span>
                     </button>
 
-                    {/* Functional Comment Button */}
                     <button
                       className="toolbar-btn icon-only"
                       onClick={() => commentInputRef.current?.focus()}
@@ -268,7 +398,6 @@ export function ArtworkModal({
                       <HugeiconsIcon icon={Comment01Icon} size={18} className="toolbar-icon" />
                     </button>
 
-                    {/* Functional Share Button */}
                     <button
                       className="toolbar-btn icon-only"
                       onClick={handleCopyLink}
@@ -277,7 +406,6 @@ export function ArtworkModal({
                       <HugeiconsIcon icon={Share01Icon} size={18} className="toolbar-icon" />
                     </button>
 
-                    {/* Functional More Options Menu */}
                     <div className="more-menu-wrapper">
                       <button
                         className={`toolbar-btn icon-only ${showMoreMenu ? 'active' : ''}`}
@@ -312,7 +440,6 @@ export function ArtworkModal({
                     </div>
                   </div>
 
-                  {/* Clean Custom Category Dropdown Pill (Zero Empty Whitespace!) */}
                   <div className="toolbar-right-actions">
                     <div className="custom-category-wrapper">
                       <button
@@ -364,10 +491,7 @@ export function ArtworkModal({
                   </div>
                   <button
                     className={`pinterest-follow-btn ${isFollowing ? 'following' : ''}`}
-                    onClick={() => {
-                      setIsFollowing(!isFollowing);
-                      showToast(isFollowing ? `Unfollowed @${artwork.artistHandle}` : `Following @${artwork.artistHandle}`);
-                    }}
+                    onClick={handleToggleFollow}
                   >
                     {isFollowing ? 'Following' : 'Follow'}
                   </button>
@@ -376,6 +500,11 @@ export function ArtworkModal({
                 {/* Artwork Title & Tags */}
                 <div className="pin-title-block">
                   <h2 className="pin-main-title">{artwork.title}</h2>
+                  {artwork.description && (
+                    <p className="pin-description" style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                      {artwork.description}
+                    </p>
+                  )}
                   <div className="pin-tags-list">
                     {artwork.tags?.map((t, idx) => (
                       <span key={idx} className="pin-tag-pill">
@@ -385,7 +514,7 @@ export function ArtworkModal({
                   </div>
                 </div>
 
-                {/* Comments Discussion Section */}
+                {/* Comments Section */}
                 <div className="pinterest-comments-block">
                   <div className="comments-header-row">
                     <span className="comments-count-title">{comments.length} comments</span>
@@ -409,7 +538,7 @@ export function ArtworkModal({
                       type="text"
                       ref={commentInputRef}
                       className="pinterest-input"
-                      placeholder="Add a comment..."
+                      placeholder={user ? "Add a comment..." : "Sign in to join the conversation..."}
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                     />
@@ -428,7 +557,7 @@ export function ArtworkModal({
               </div>
             </div>
 
-            {/* RIGHT 2-COLUMN RECOMMENDATION SIDE-GRID */}
+            {/* RIGHT SIDE RECOMMENDATIONS */}
             <div className="pinterest-side-recommendations">
               {sideArtworks.map((item) => (
                 <motion.div
@@ -449,7 +578,6 @@ export function ArtworkModal({
 
           {/* BOTTOM MASONRY RECOMMENDATION FEED */}
           <div className="pinterest-bottom-feed-container">
-            {/* Curated "Ideas you might love" Topic Cards Row */}
             <div className="ideas-might-love-section">
               <h3 className="ideas-section-title">Ideas you might love</h3>
               <div className="ideas-cards-grid">
@@ -464,7 +592,6 @@ export function ArtworkModal({
               </div>
             </div>
 
-            {/* Full Width Continuous Masonry Recommendation Grid */}
             <div className="pinterest-full-masonry-grid">
               {bottomArtworks.map((item) => (
                 <motion.div
@@ -484,7 +611,7 @@ export function ArtworkModal({
           </div>
         </motion.div>
 
-        {/* FULLSCREEN IMAGE LIGHTBOX MODAL */}
+        {/* LIGHTBOX MODAL */}
         <AnimatePresence>
           {isExpandedImgOpen && (
             <div className="expanded-image-modal-overlay" onClick={() => setIsExpandedImgOpen(false)}>

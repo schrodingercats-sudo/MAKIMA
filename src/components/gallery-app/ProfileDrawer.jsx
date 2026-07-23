@@ -16,8 +16,11 @@ import {
   Add01Icon,
   Remove01Icon,
   Delete02Icon,
-  Upload01Icon
 } from '@hugeicons/core-free-icons';
+
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { invalidateUserProfileCache } from '../../lib/redis';
 import './ProfileDrawer.css';
 
 export function ProfileDrawer({
@@ -27,16 +30,43 @@ export function ProfileDrawer({
   onNavigateProfile,
   onUpdateUser
 }) {
+  const { user, profile, signOut, fetchProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('profile-settings');
   const [formState, setFormState] = useState({ ...currentUser });
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(currentUser.avatar);
+
   const [socialLinks, setSocialLinks] = useState([
-    { id: 1, type: 'x', url: currentUser.social.x },
-    { id: 2, type: 'instagram', url: currentUser.social.instagram },
-    { id: 3, type: 'youtube', url: currentUser.social.youtube }
+    { id: 1, type: 'x', url: currentUser.social?.x || '' },
+    { id: 2, type: 'instagram', url: currentUser.social?.instagram || '' },
+    { id: 3, type: 'youtube', url: currentUser.social?.youtube || '' }
   ]);
 
-  // Handle Esc key to close drawer
+  // Sync formState with profile when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormState({
+        name: profile.display_name || currentUser.name,
+        username: profile.handle?.replace(/^@/, '') || currentUser.username,
+        avatar: profile.avatar_url || currentUser.avatar,
+        bio: profile.bio || '',
+        website: profile.website || '',
+        location: profile.location || '',
+      });
+      setAvatarPreview(profile.avatar_url || currentUser.avatar);
+      if (profile.social_links) {
+        setSocialLinks([
+          { id: 1, type: 'x', url: profile.social_links.x || '' },
+          { id: 2, type: 'instagram', url: profile.social_links.instagram || '' },
+          { id: 3, type: 'youtube', url: profile.social_links.youtube || '' }
+        ]);
+      }
+    }
+  }, [profile, currentUser]);
+
+  // Handle Esc key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -66,18 +96,84 @@ export function ProfileDrawer({
     setSocialLinks(socialLinks.filter((item) => item.id !== id));
   };
 
-  const handleSaveProfile = (e) => {
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (onUpdateUser) {
-      onUpdateUser({
-        ...formState,
-        social: {
-          x: socialLinks[0]?.url || '',
-          instagram: socialLinks[1]?.url || '',
-          youtube: socialLinks[2]?.url || ''
+    setIsSaving(true);
+
+    try {
+      let finalAvatarUrl = formState.avatar;
+
+      // Upload avatar to Supabase Storage if a new file was chosen
+      if (avatarFile && user) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (!uploadErr) {
+          const { data: pubUrl } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          if (pubUrl?.publicUrl) {
+            finalAvatarUrl = pubUrl.publicUrl;
+          }
+        } else {
+          console.warn('Avatar upload warning:', uploadErr.message);
         }
-      });
+      }
+
+      const socialObj = {
+        x: socialLinks.find(s => s.type === 'x')?.url || '',
+        instagram: socialLinks.find(s => s.type === 'instagram')?.url || '',
+        youtube: socialLinks.find(s => s.type === 'youtube')?.url || '',
+      };
+
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            display_name: formState.name,
+            handle: formState.username.startsWith('@') ? formState.username : `@${formState.username}`,
+            bio: formState.bio,
+            website: formState.website,
+            location: formState.location,
+            social_links: socialObj,
+            avatar_url: finalAvatarUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          console.warn('Error updating profile in Supabase:', error.message);
+        } else {
+          await invalidateUserProfileCache(user.id);
+          await fetchProfile(user.id);
+        }
+      }
+
+      if (onUpdateUser) {
+        onUpdateUser({
+          ...formState,
+          avatar: finalAvatarUrl,
+          social: socialObj
+        });
+      }
+    } catch (err) {
+      console.warn('Profile save exception:', err.message);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    onClose();
   };
 
   return (
@@ -104,25 +200,23 @@ export function ProfileDrawer({
           aria-modal="true"
           aria-label="Profile Settings Panel"
         >
-          {/* Main Grid Layout inside Drawer: Left Navigation | Right Content */}
           <div className="drawer-grid-container">
             {/* LEFT NAVIGATION COLUMN */}
             <aside className="drawer-left-nav">
-              {/* User Avatar & Info Card Header */}
               <div className="drawer-user-card">
                 <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
+                  src={avatarPreview}
+                  alt={formState.name}
                   className="user-card-avatar"
                 />
                 <div className="user-card-info">
-                  <h4 className="user-card-name">{currentUser.name}</h4>
-                  <span className="user-card-handle">@{currentUser.username}</span>
+                  <h4 className="user-card-name">{formState.name}</h4>
+                  <span className="user-card-handle">@{formState.username}</span>
                   <button
                     className="view-profile-link-btn"
                     onClick={() => {
                       onClose();
-                      onNavigateProfile(currentUser.username);
+                      onNavigateProfile(formState.username);
                     }}
                   >
                     View Profile &rsaquo;
@@ -130,7 +224,6 @@ export function ProfileDrawer({
                 </div>
               </div>
 
-              {/* Navigation Menu Links */}
               <nav className="drawer-menu-nav">
                 <ul className="menu-list">
                   <li>
@@ -240,9 +333,8 @@ export function ProfileDrawer({
                 </ul>
               </nav>
 
-              {/* Bottom Log Out Action */}
               <div className="drawer-logout-container">
-                <button className="logout-btn" onClick={onClose}>
+                <button className="logout-btn" onClick={handleLogout}>
                   <HugeiconsIcon icon={Logout01Icon} size={18} />
                   <span>Log Out</span>
                 </button>
@@ -264,25 +356,46 @@ export function ProfileDrawer({
                       <label className="field-label">Profile Picture</label>
                       <div className="avatar-edit-row">
                         <img
-                          src={formState.avatar}
+                          src={avatarPreview}
                           alt="Avatar Preview"
                           className="avatar-edit-preview"
                         />
                         <div className="avatar-btn-group">
-                          <label className="btn-secondary change-photo-btn">
+                          <label className="btn-secondary change-photo-btn" style={{ cursor: 'pointer' }}>
                             Change Photo
-                            <input type="file" accept="image/*" hidden />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleAvatarSelect}
+                              hidden
+                            />
                           </label>
-                          <button type="button" className="icon-btn-danger" title="Remove photo">
+                          <button
+                            type="button"
+                            className="icon-btn-danger"
+                            title="Remove photo"
+                            onClick={() => setAvatarPreview('/images/coming-soon.jpg')}
+                          >
                             <HugeiconsIcon icon={Delete02Icon} size={18} />
                           </button>
                         </div>
                       </div>
                     </div>
 
+                    {/* Display Name Input */}
+                    <div className="form-field-group">
+                      <label className="field-label">Display Name</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={formState.name}
+                        onChange={(e) => setFormState({ ...formState, name: e.target.value })}
+                      />
+                    </div>
+
                     {/* Username Input */}
                     <div className="form-field-group">
-                      <label className="field-label">Username</label>
+                      <label className="field-label">Username / Handle</label>
                       <div className="input-with-action">
                         <input
                           type="text"
@@ -376,10 +489,9 @@ export function ProfileDrawer({
                       </button>
                     </div>
 
-                    {/* Save Changes Primary Button */}
                     <div className="form-submit-row">
-                      <button type="submit" className="save-changes-primary-btn">
-                        Save Changes
+                      <button type="submit" className="save-changes-primary-btn" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                       </button>
                     </div>
                   </form>
@@ -393,7 +505,7 @@ export function ProfileDrawer({
                     <p className="pane-desc">Manage security, email address, and authentication.</p>
                   </header>
                   <div className="pane-placeholder-box">
-                    <p>Primary Email: <strong>makima@publicsafety.jp</strong></p>
+                    <p>Primary Email: <strong>{user?.email || 'makima@publicsafety.jp'}</strong></p>
                     <p>Two-Factor Authentication: <span className="badge-active">Enabled</span></p>
                   </div>
                 </div>
@@ -406,7 +518,7 @@ export function ProfileDrawer({
                     <p className="pane-desc">Your bookmarked and curated Makima artwork sets.</p>
                   </header>
                   <div className="pane-placeholder-box">
-                    <p>📁 14 Saved Artworks in "Public Safety Dossier"</p>
+                    <p>📁 Bookmarked Artworks Saved in Cloud Database</p>
                   </div>
                 </div>
               )}
@@ -418,7 +530,7 @@ export function ProfileDrawer({
                     <p className="pane-desc">Artworks you have liked across the gallery.</p>
                   </header>
                   <div className="pane-placeholder-box">
-                    <p>❤️ 1,240 Liked Creations</p>
+                    <p>❤️ Live Liked Creations</p>
                   </div>
                 </div>
               )}
@@ -430,7 +542,7 @@ export function ProfileDrawer({
                     <p className="pane-desc">Artworks recently viewed during this session.</p>
                   </header>
                   <div className="pane-placeholder-box">
-                    <p>🕒 38 Recently Viewed Items</p>
+                    <p>🕒 Session Activity Active</p>
                   </div>
                 </div>
               )}
@@ -438,7 +550,7 @@ export function ProfileDrawer({
               {activeTab === 'following' && (
                 <div className="tab-pane">
                   <header className="pane-header">
-                    <h3 className="pane-title">Following (142)</h3>
+                    <h3 className="pane-title">Following</h3>
                     <p className="pane-desc">Artists and creators you are following.</p>
                   </header>
                   <div className="pane-placeholder-box">
@@ -450,7 +562,7 @@ export function ProfileDrawer({
               {activeTab === 'followers' && (
                 <div className="tab-pane">
                   <header className="pane-header">
-                    <h3 className="pane-title">Followers (48.9K)</h3>
+                    <h3 className="pane-title">Followers</h3>
                     <p className="pane-desc">Devoted members following Public Safety HQ.</p>
                   </header>
                   <div className="pane-placeholder-box">
