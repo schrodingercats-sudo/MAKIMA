@@ -6,6 +6,16 @@
   color: var(--text-primary);
 }
 
+/* Force Agentation toolbar to always float on top of all artwork overlays & modals */
+[data-agentation-root],
+[class*="agentation"],
+#agentation-root,
+.agentation-toolbar,
+div[data-agentation],
+button[class*="agentation"] {
+  z-index: 2147483647 !important;
+}
+
 .editorial-main-content {
   position: relative;
   width: 100%;
@@ -33,22 +43,6 @@
 @media (max-width: 1024px) {
   .quotes-gallery-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-/* Focus Visible Keyboard Navigation Rings */
-:focus-visible {
-  outline: 2px solid var(--accent-red);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-/* Accessibility Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    gap: 32px;
   }
 }
