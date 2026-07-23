@@ -16,11 +16,15 @@ import LegacyFooter from './components/LegacyFooter';
 import ImageModal from './components/ImageModal';
 import ReportModal from './components/ReportModal';
 import ComingSoonModal from './components/ComingSoonModal';
+import GalleryPage from './components/gallery-app/GalleryPage';
 import './App.css';
 
 const SECTIONS = ['hero', 'story', 'profile', 'relationships', 'timeline', 'quotes', 'legacy'];
 
 export function App() {
+  const [currentView, setCurrentView] = useState(() => {
+    return window.location.pathname.startsWith('/gallery') ? 'gallery' : 'tribute';
+  });
   const [activeSection, setActiveSection] = useState('hero');
   const [selectedImage, setSelectedImage] = useState(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -28,8 +32,23 @@ export function App() {
   const [securityPassed, setSecurityPassed] = useState(false);
   const lenisRef = useRef(null);
 
-  // Initialize Lenis Smooth Scroll
+  // Sync URL history state
   useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname.startsWith('/gallery')) {
+        setCurrentView('gallery');
+      } else {
+        setCurrentView('tribute');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Initialize Lenis Smooth Scroll on tribute view
+  useEffect(() => {
+    if (currentView !== 'tribute') return;
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -55,10 +74,12 @@ export function App() {
       lenis.destroy();
       window.lenis = null;
     };
-  }, []);
+  }, [currentView]);
 
   // IntersectionObserver to update active section on scroll
   useEffect(() => {
+    if (currentView !== 'tribute') return;
+
     const observerOptions = {
       root: null,
       rootMargin: '-30% 0px -40% 0px',
@@ -86,10 +107,27 @@ export function App() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [currentView]);
 
-  // Smooth Navigation Handler using Lenis or scrollIntoView fallback
+  // Smooth Navigation Handler for Landing Tribute
   const handleNavigate = (sectionId) => {
+    if (sectionId === 'gallery') {
+      window.history.pushState({}, '', '/gallery');
+      setCurrentView('gallery');
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (currentView !== 'tribute') {
+      window.history.pushState({}, '', '/');
+      setCurrentView('tribute');
+      setTimeout(() => {
+        const targetEl = document.getElementById(sectionId);
+        if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return;
+    }
+
     const targetEl = document.getElementById(sectionId);
     if (!targetEl) return;
 
@@ -103,12 +141,10 @@ export function App() {
     }
   };
 
-  const handleOpenGalleryComingSoon = () => {
-    setComingSoonInfo({
-      isOpen: true,
-      title: 'GALLERY FEATURE',
-      message: 'The developer is lazy. The full gallery feature will come soon!'
-    });
+  const handleOpenGalleryPage = () => {
+    window.history.pushState({}, '', '/gallery');
+    setCurrentView('gallery');
+    window.scrollTo(0, 0);
   };
 
   const handleOpenSocialComingSoon = (name) => {
@@ -132,61 +168,75 @@ export function App() {
       {/* Mobile Device & Viewport Warning Overlay */}
       <MobileWarningOverlay />
 
-      {/* Fullscreen Video Cinematic Intro Overlay */}
-      <CinematicIntro />
-
-      {/* Sticky Header */}
-      <Header activeSection={activeSection} onNavigate={handleNavigate} />
-
-      {/* Main Content Area */}
-      <main className="editorial-main-content">
-        {/* Section 1: Hero */}
-        <Hero onScrollClick={handleNavigate} />
-
-        {/* Section 2: Identity (01 IDENTITY) */}
-        <StickyStory />
-
-        {/* Section 3: Character Profile (02 PROFILE) */}
-        <CharacterProfile />
-
-        {/* Section 4: Relationships (03 RELATIONSHIPS) */}
-        <RelationshipsDossier />
-
-        {/* Section 5: Timeline (05 TIMELINE) */}
-        <Timeline />
-
-        {/* Section 6 & 7: Quotes & Gallery Side-by-Side (06 QUOTES & 07 GALLERY) */}
-        <section id="quotes" className="quotes-gallery-section section-padding">
-          <div className="editorial-container quotes-gallery-grid">
-            <Quote />
-            <Gallery
-              onSelectImage={(img) => setSelectedImage(img)}
-              onOpenComingSoon={handleOpenGalleryComingSoon}
-            />
-          </div>
-        </section>
-
-        {/* Section 8: Legacy Tribute & Footer */}
-        <LegacyFooter
-          onNavigate={handleNavigate}
-          onOpenReport={() => setIsReportOpen(true)}
-          onOpenSocialComingSoon={handleOpenSocialComingSoon}
+      {currentView === 'gallery' ? (
+        /* FULL INTERACTIVE GALLERY PAGE VIEW */
+        <GalleryPage
+          onBackToTribute={() => {
+            window.history.pushState({}, '', '/');
+            setCurrentView('tribute');
+            window.scrollTo(0, 0);
+          }}
         />
-      </main>
+      ) : (
+        /* MAIN LANDING TRIBUTE PAGE VIEW */
+        <>
+          {/* Fullscreen Video Cinematic Intro Overlay */}
+          <CinematicIntro />
 
-      {/* Lightbox Modal */}
-      <ImageModal image={selectedImage} onClose={() => setSelectedImage(null)} />
+          {/* Sticky Header */}
+          <Header activeSection={activeSection} onNavigate={handleNavigate} />
 
-      {/* Report Bug Modal */}
-      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
+          {/* Main Content Area */}
+          <main className="editorial-main-content">
+            {/* Section 1: Hero */}
+            <Hero onScrollClick={handleNavigate} />
 
-      {/* Coming Soon Modal */}
-      <ComingSoonModal
-        isOpen={comingSoonInfo.isOpen}
-        title={comingSoonInfo.title}
-        message={comingSoonInfo.message}
-        onClose={() => setComingSoonInfo({ ...comingSoonInfo, isOpen: false })}
-      />
+            {/* Section 2: Identity (01 IDENTITY) */}
+            <StickyStory />
+
+            {/* Section 3: Character Profile (02 PROFILE) */}
+            <CharacterProfile />
+
+            {/* Section 4: Relationships (03 RELATIONSHIPS) */}
+            <RelationshipsDossier />
+
+            {/* Section 5: Timeline (05 TIMELINE) */}
+            <Timeline />
+
+            {/* Section 6 & 7: Quotes & Gallery Side-by-Side (06 QUOTES & 07 GALLERY) */}
+            <section id="quotes" className="quotes-gallery-section section-padding">
+              <div className="editorial-container quotes-gallery-grid">
+                <Quote />
+                <Gallery
+                  onSelectImage={(img) => setSelectedImage(img)}
+                  onOpenComingSoon={handleOpenGalleryPage}
+                />
+              </div>
+            </section>
+
+            {/* Section 8: Legacy Tribute & Footer */}
+            <LegacyFooter
+              onNavigate={handleNavigate}
+              onOpenReport={() => setIsReportOpen(true)}
+              onOpenSocialComingSoon={handleOpenSocialComingSoon}
+            />
+          </main>
+
+          {/* Lightbox Modal */}
+          <ImageModal image={selectedImage} onClose={() => setSelectedImage(null)} />
+
+          {/* Report Bug Modal */}
+          <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
+
+          {/* Coming Soon Modal */}
+          <ComingSoonModal
+            isOpen={comingSoonInfo.isOpen}
+            title={comingSoonInfo.title}
+            message={comingSoonInfo.message}
+            onClose={() => setComingSoonInfo({ ...comingSoonInfo, isOpen: false })}
+          />
+        </>
+      )}
     </div>
   );
 }
