@@ -159,7 +159,7 @@ export function App() {
   return (
     <div className="makima-editorial-root">
       {/* Agentation Visual Feedback Toolbar */}
-      <Agentation />
+      <Agentation endpoint="http://localhost:4747" />
 
       {/* Vercel Security Checkpoint Overlay */}
       {!securityPassed && (
