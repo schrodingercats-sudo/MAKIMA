@@ -12,7 +12,8 @@ import {
   ArrowLeft02Icon,
   ArrowRight02Icon,
   SparklesIcon,
-  GridIcon
+  MoreHorizontalIcon,
+  Maximize01Icon
 } from '@hugeicons/core-free-icons';
 import './ArtworkModal.css';
 
@@ -31,21 +32,29 @@ export function ArtworkModal({
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([
     { id: 1, name: 'Denji', handle: '@denji_chainsaw', avatar: '/images/p1.jpg', text: 'Makima-san is truly absolute...' },
-    { id: 2, name: 'Aki Hayakawa', handle: '@aki_fox', avatar: '/images/p2.jpg', text: 'Contract acknowledged.' }
+    { id: 2, name: 'Aki Hayakawa', handle: '@aki_fox', avatar: '/images/p2.jpg', text: 'Contract acknowledged.' },
+    { id: 3, name: 'Power', handle: '@power_blood', avatar: '/images/p3.jpg', text: 'Where nose?' }
   ]);
   const [imageLoaded, setImageLoaded] = useState(false);
   const overlayRef = useRef(null);
 
-  // Reset state & scroll when artwork changes
+  // Curated "Ideas you might love" category chips matching Pinterest screenshot
+  const curatedIdeas = [
+    { title: 'Mommy makima', image: '/images/gallery-1.webp' },
+    { title: 'Kishibe makima is listening', image: '/images/hero-bg.webp' },
+    { title: 'Denji and asa', image: '/images/gallery-2.webp' },
+    { title: 'Miss makima', image: '/images/gallery-3.webp' },
+    { title: 'Makima black and white', image: '/images/gallery-4.webp' }
+  ];
+
+  // Preload image and sync History API
   useEffect(() => {
     if (artwork) {
       setImageLoaded(false);
-      // Preload image
       const img = new Image();
       img.src = artwork.src;
       img.onload = () => setImageLoaded(true);
 
-      // Push history state if not already set
       const targetPath = `/gallery/artwork/${artwork.id}`;
       if (window.location.pathname !== targetPath) {
         window.history.pushState({ artworkId: artwork.id }, '', targetPath);
@@ -53,11 +62,11 @@ export function ArtworkModal({
     }
   }, [artwork]);
 
-  // Handle History API Back Button (popstate), Esc key, and Arrow Keys (Left/Right)
+  // Handle History API popstate, Esc key, Left/Right arrow keys
   useEffect(() => {
     if (!artwork) return;
 
-    const handlePopState = (e) => {
+    const handlePopState = () => {
       onClose();
     };
 
@@ -65,13 +74,11 @@ export function ArtworkModal({
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'ArrowRight') {
-        // Navigate to next artwork in list
         const currentIndex = allArtworks.findIndex((a) => a.id === artwork.id);
         if (currentIndex >= 0 && currentIndex < allArtworks.length - 1) {
           onSelectArtwork(allArtworks[currentIndex + 1]);
         }
       } else if (e.key === 'ArrowLeft') {
-        // Navigate to previous artwork in list
         const currentIndex = allArtworks.findIndex((a) => a.id === artwork.id);
         if (currentIndex > 0) {
           onSelectArtwork(allArtworks[currentIndex - 1]);
@@ -88,35 +95,14 @@ export function ArtworkModal({
     };
   }, [artwork, allArtworks, onClose, onSelectArtwork]);
 
-  // Curated Recommendation Feed Categorization
-  const recommendations = useMemo(() => {
-    if (!artwork || !allArtworks.length) return {};
+  // Partition recommendations into Side Column (2-col) & Bottom Feed
+  const { sideArtworks, bottomArtworks } = useMemo(() => {
+    if (!artwork || !allArtworks.length) return { sideArtworks: [], bottomArtworks: [] };
 
-    const otherArtworks = allArtworks.filter((a) => a.id !== artwork.id);
-
-    // 1. Same Artist
-    const sameArtist = otherArtworks.filter((a) => a.artist === artwork.artist);
-
-    // 2. Related (Same Category or Tags)
-    const related = otherArtworks.filter(
-      (a) => a.artist !== artwork.artist && (a.category === artwork.category || a.tags?.some((t) => artwork.tags?.includes(t)))
-    );
-
-    // 3. Editorial Collection
-    const editorial = otherArtworks.filter((a) => a.category === 'Editorial');
-
-    // 4. You May Also Like (Curated mix)
-    const curated = otherArtworks.filter((a) => a.likes > 3000);
-
-    // 5. Recently Uploaded
-    const recent = [...otherArtworks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
+    const others = allArtworks.filter((a) => a.id !== artwork.id);
     return {
-      sameArtist: sameArtist.slice(0, 4),
-      related: related.slice(0, 6),
-      editorial: editorial.slice(0, 4),
-      curated: curated.slice(0, 6),
-      recent: recent.slice(0, 6)
+      sideArtworks: others.slice(0, 4),
+      bottomArtworks: others.slice(4)
     };
   }, [artwork, allArtworks]);
 
@@ -139,7 +125,6 @@ export function ArtworkModal({
   };
 
   const handleRecommendationClick = (selectedArt) => {
-    // Scroll overlay back up smoothly to main viewer card
     if (overlayRef.current) {
       overlayRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -148,270 +133,209 @@ export function ArtworkModal({
 
   return (
     <AnimatePresence>
-      <div className="pinterest-viewer-overlay" ref={overlayRef} onClick={onClose}>
+      <div className="pinterest-desktop-overlay" ref={overlayRef} onClick={onClose}>
         <motion.div
-          className="pinterest-viewer-container"
-          initial={{ opacity: 0, scale: 0.95 }}
+          className="pinterest-layout-wrapper"
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          exit={{ opacity: 0, scale: 0.96 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close Floating Button */}
-          <button className="pinterest-close-btn" onClick={onClose} aria-label="Close Artwork Viewer">
-            <HugeiconsIcon icon={Cancel01Icon} size={22} />
-          </button>
+          {/* MAIN PIN ROW: [Pin Detail Card] + [Right 2-Col Side Grid] */}
+          <div className="pin-detail-main-row">
+            {/* PIN DETAIL CARD (Exact Pinterest Card Layout) */}
+            <div className="pinterest-pin-card">
+              {/* Left Side: Artwork Image Container */}
+              <div className="pin-media-box">
+                <button className="pin-back-arrow-btn" onClick={onClose} title="Back to Gallery">
+                  <HugeiconsIcon icon={ArrowLeft02Icon} size={20} />
+                </button>
 
-          {/* MAIN PIN CARD (65% Image / 35% Info Split) */}
-          <div className="main-pin-card">
-            {/* LEFT 65%: Large High-Res Artwork Area */}
-            <div className="pin-media-area">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={artwork.id}
-                  className="pin-image-frame"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: imageLoaded ? 1 : 0.4 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <img
-                    src={artwork.src}
-                    alt={artwork.title}
-                    className="pin-main-image"
-                    onLoad={() => setImageLoaded(true)}
-                  />
-                </motion.div>
-              </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={artwork.id}
+                    className="pin-image-wrapper"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: imageLoaded ? 1 : 0.4 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <img src={artwork.src} alt={artwork.title} className="pin-exact-image" />
+                  </motion.div>
+                </AnimatePresence>
 
-              {/* Prev / Next Keyboard Navigation Badges */}
-              <div className="nav-shortcut-hints">
-                <span className="hint-pill">← Previous</span>
-                <span className="hint-pill">Next →</span>
+                <button className="pin-expand-btn" title="Expand image">
+                  <HugeiconsIcon icon={Maximize01Icon} size={18} />
+                </button>
               </div>
-            </div>
 
-            {/* RIGHT 35%: Information, Actions & Discussion Pane */}
-            <div className="pin-info-pane">
-              {/* Artist Row */}
-              <div className="pin-artist-row">
-                <div
-                  className="artist-profile-trigger"
-                  onClick={() => {
-                    onClose();
-                    onNavigateArtist(artwork.artist);
-                  }}
-                >
-                  <img src={artwork.artistAvatar} alt={artwork.artist} className="artist-avatar-img" />
-                  <div className="artist-meta">
-                    <h4 className="artist-name">{artwork.artist}</h4>
-                    <span className="artist-handle">{artwork.artistHandle}</span>
+              {/* Right Side: Header Toolbar, Title, Artist & Discussion Pane */}
+              <div className="pin-details-box">
+                {/* Top Action Toolbar matching Screenshot 1 */}
+                <div className="pinterest-action-toolbar">
+                  <div className="toolbar-left-actions">
+                    <button
+                      className={`toolbar-btn ${isLiked ? 'liked' : ''}`}
+                      onClick={() => onToggleLike(artwork.id)}
+                      title="Like"
+                    >
+                      <HugeiconsIcon icon={FavouriteIcon} size={20} />
+                      <span className="like-count">{artwork.likes + (isLiked ? 1 : 0)}</span>
+                    </button>
+
+                    <button className="toolbar-btn" title="Comment">
+                      <HugeiconsIcon icon={Comment01Icon} size={20} />
+                    </button>
+
+                    <button
+                      className="toolbar-btn"
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert('Link copied!');
+                      }}
+                      title="Share"
+                    >
+                      <HugeiconsIcon icon={Share01Icon} size={20} />
+                    </button>
+
+                    <button className="toolbar-btn" title="More Options">
+                      <HugeiconsIcon icon={MoreHorizontalIcon} size={20} />
+                    </button>
+                  </div>
+
+                  <div className="toolbar-right-actions">
+                    <select className="pin-category-select" defaultValue={artwork.category}>
+                      <option value="Anime">Anime</option>
+                      <option value="Editorial">Editorial</option>
+                      <option value="Illustration">Illustration</option>
+                      <option value="Manga">Manga</option>
+                    </select>
+
+                    <button
+                      className={`pinterest-save-btn ${isSaved ? 'saved' : ''}`}
+                      onClick={() => onToggleSave(artwork.id)}
+                    >
+                      {isSaved ? 'Saved' : 'Save'}
+                    </button>
                   </div>
                 </div>
 
-                <button
-                  className={`follow-btn ${isFollowing ? 'following' : ''}`}
-                  onClick={() => setIsFollowing(!isFollowing)}
-                >
-                  {isFollowing ? (
-                    <>
-                      <HugeiconsIcon icon={UserCheck01Icon} size={16} />
-                      <span>Following</span>
-                    </>
-                  ) : (
-                    <>
-                      <HugeiconsIcon icon={UserAdd01Icon} size={16} />
-                      <span>Follow</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Title & Category */}
-              <div className="pin-header-box">
-                <span className="pin-category-badge">{artwork.category}</span>
-                <h1 className="pin-title">{artwork.title}</h1>
-              </div>
-
-              {/* Action Bar (Like, Save, Share) */}
-              <div className="pin-action-bar">
-                <button
-                  className={`pin-action-btn ${isLiked ? 'liked' : ''}`}
-                  onClick={() => onToggleLike(artwork.id)}
-                >
-                  <HugeiconsIcon icon={FavouriteIcon} size={18} />
-                  <span>{artwork.likes + (isLiked ? 1 : 0)} Likes</span>
-                </button>
-
-                <button
-                  className={`pin-action-btn ${isSaved ? 'saved' : ''}`}
-                  onClick={() => onToggleSave(artwork.id)}
-                >
-                  <HugeiconsIcon icon={Bookmark02Icon} size={18} />
-                  <span>{isSaved ? 'Saved' : 'Save'}</span>
-                </button>
-
-                <button
-                  className="pin-action-btn"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert('Artwork link copied to clipboard!');
-                  }}
-                >
-                  <HugeiconsIcon icon={Share01Icon} size={18} />
-                  <span>Share</span>
-                </button>
-              </div>
-
-              {/* Tags */}
-              <div className="pin-tags-row">
-                {artwork.tags?.map((tag, idx) => (
-                  <span key={idx} className="pin-tag-chip">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Discussion / Comments Section */}
-              <div className="pin-comments-section">
-                <h5 className="comments-header-title">
-                  <HugeiconsIcon icon={Comment01Icon} size={16} />
-                  <span>Discussion ({comments.length})</span>
-                </h5>
-
-                <div className="comments-list">
-                  {comments.map((c) => (
-                    <div key={c.id} className="comment-item">
-                      <img src={c.avatar} alt={c.name} className="comment-avatar" />
-                      <div className="comment-body">
-                        <div className="comment-author">
-                          <span className="comment-name">{c.name}</span>
-                          <span className="comment-handle">{c.handle}</span>
-                        </div>
-                        <p className="comment-text">{c.text}</p>
-                      </div>
-                    </div>
-                  ))}
+                {/* Artist Row */}
+                <div className="pinterest-artist-row">
+                  <img src={artwork.artistAvatar} alt={artwork.artist} className="pin-artist-avatar" />
+                  <div className="pin-artist-info">
+                    <span className="artist-name">{artwork.artist}</span>
+                    <span className="artist-handle">{artwork.artistHandle}</span>
+                  </div>
+                  <button
+                    className={`pinterest-follow-btn ${isFollowing ? 'following' : ''}`}
+                    onClick={() => setIsFollowing(!isFollowing)}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
                 </div>
 
-                <form onSubmit={handleAddComment} className="comment-input-form">
-                  <input
-                    type="text"
-                    className="comment-input"
-                    placeholder="Add a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                  />
-                  <button type="submit" className="comment-submit-btn" disabled={!commentText.trim()}>
-                    Post
-                  </button>
-                </form>
+                {/* Artwork Title & Tags */}
+                <div className="pin-title-block">
+                  <h2 className="pin-main-title">{artwork.title}</h2>
+                  <div className="pin-tags-list">
+                    {artwork.tags?.map((t, idx) => (
+                      <span key={idx} className="pin-tag-pill">
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comments Discussion Section */}
+                <div className="pinterest-comments-block">
+                  <div className="comments-header-row">
+                    <span className="comments-count-title">{comments.length} comments</span>
+                  </div>
+
+                  <div className="pinterest-comments-list">
+                    {comments.map((c) => (
+                      <div key={c.id} className="pinterest-comment-item">
+                        <img src={c.avatar} alt={c.name} className="comment-user-avatar" />
+                        <div className="comment-content-box">
+                          <span className="comment-user-name">{c.name}</span>
+                          <span className="comment-text">{c.text}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Comment Input */}
+                  <form onSubmit={handleAddComment} className="pinterest-comment-input-bar">
+                    <input
+                      type="text"
+                      className="pinterest-input"
+                      placeholder="Add a comment"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                    />
+                    <div className="input-emoji-tools">
+                      <button type="button" className="emoji-btn" title="Add emoji">😊</button>
+                    </div>
+                  </form>
+                </div>
               </div>
+            </div>
+
+            {/* RIGHT 2-COLUMN RECOMMENDATION SIDE-GRID (Matching Screenshot 1 Right Pane) */}
+            <div className="pinterest-side-recommendations">
+              {sideArtworks.map((item) => (
+                <motion.div
+                  key={item.id}
+                  className="side-pin-card"
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  onClick={() => handleRecommendationClick(item)}
+                >
+                  <img src={item.src} alt={item.title} className="side-pin-img" loading="lazy" />
+                  <div className="side-pin-footer">
+                    <span className="side-pin-title">{item.title}</span>
+                    <span className="side-pin-artist">{item.artistHandle}</span>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
 
-          {/* CONTINUOUS EXPLORATION RECOMMENDATION FEED ("MORE LIKE THIS") */}
-          <div className="recommendations-feed-container">
-            <div className="feed-header-divider">
-              <span className="feed-divider-line" />
-              <div className="feed-header-badge">
-                <HugeiconsIcon icon={SparklesIcon} size={16} />
-                <span>MORE LIKE THIS</span>
+          {/* BOTTOM MASONRY RECOMMENDATION FEED (Matching Screenshot 2 Continuous Grid) */}
+          <div className="pinterest-bottom-feed-container">
+            {/* Curated "Ideas you might love" Topic Cards Row */}
+            <div className="ideas-might-love-section">
+              <h3 className="ideas-section-title">Ideas you might love</h3>
+              <div className="ideas-cards-grid">
+                {curatedIdeas.map((idea, idx) => (
+                  <div key={idx} className="idea-chip-card">
+                    <img src={idea.image} alt={idea.title} className="idea-chip-img" />
+                    <div className="idea-chip-overlay">
+                      <span className="idea-chip-text">{idea.title}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="feed-divider-line" />
             </div>
 
-            {/* 1. Related to this Artwork Section */}
-            {recommendations.related?.length > 0 && (
-              <div className="recommendation-section">
-                <h3 className="section-feed-title">Related to this Artwork</h3>
-                <div className="recommendation-masonry-grid">
-                  {recommendations.related.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className="rec-artwork-card"
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      onClick={() => handleRecommendationClick(item)}
-                    >
-                      <img src={item.src} alt={item.title} className="rec-img" loading="lazy" />
-                      <div className="rec-card-overlay">
-                        <span className="rec-title">{item.title}</span>
-                        <span className="rec-artist">by {item.artist}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 2. More by Same Artist Section */}
-            {recommendations.sameArtist?.length > 0 && (
-              <div className="recommendation-section">
-                <h3 className="section-feed-title">More by {artwork.artist}</h3>
-                <div className="recommendation-masonry-grid">
-                  {recommendations.sameArtist.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className="rec-artwork-card"
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      onClick={() => handleRecommendationClick(item)}
-                    >
-                      <img src={item.src} alt={item.title} className="rec-img" loading="lazy" />
-                      <div className="rec-card-overlay">
-                        <span className="rec-title">{item.title}</span>
-                        <span className="rec-artist">by {item.artist}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 3. Editorial Collection Section */}
-            {recommendations.editorial?.length > 0 && (
-              <div className="recommendation-section">
-                <h3 className="section-feed-title">Editorial Collection</h3>
-                <div className="recommendation-masonry-grid">
-                  {recommendations.editorial.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className="rec-artwork-card"
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      onClick={() => handleRecommendationClick(item)}
-                    >
-                      <img src={item.src} alt={item.title} className="rec-img" loading="lazy" />
-                      <div className="rec-card-overlay">
-                        <span className="rec-title">{item.title}</span>
-                        <span className="rec-artist">by {item.artist}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4. You May Also Like Section */}
-            {recommendations.curated?.length > 0 && (
-              <div className="recommendation-section">
-                <h3 className="section-feed-title">You May Also Like</h3>
-                <div className="recommendation-masonry-grid">
-                  {recommendations.curated.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className="rec-artwork-card"
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      onClick={() => handleRecommendationClick(item)}
-                    >
-                      <img src={item.src} alt={item.title} className="rec-img" loading="lazy" />
-                      <div className="rec-card-overlay">
-                        <span className="rec-title">{item.title}</span>
-                        <span className="rec-artist">by {item.artist}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Full Width Continuous Masonry Recommendation Grid */}
+            <div className="pinterest-full-masonry-grid">
+              {bottomArtworks.map((item) => (
+                <motion.div
+                  key={item.id}
+                  className="bottom-pin-card"
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  onClick={() => handleRecommendationClick(item)}
+                >
+                  <img src={item.src} alt={item.title} className="bottom-pin-img" loading="lazy" />
+                  <div className="bottom-pin-info">
+                    <span className="bottom-pin-title">{item.title}</span>
+                    <span className="bottom-pin-artist">by {item.artist}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </div>
