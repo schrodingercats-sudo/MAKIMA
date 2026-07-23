@@ -23,10 +23,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
 const SECTIONS = ['hero', 'story', 'profile', 'relationships', 'timeline', 'quotes', 'legacy'];
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 function AppContent() {
   const [currentView, setCurrentView] = useState(() => {
-    return window.location.pathname.startsWith('/gallery') ? 'gallery' : 'tribute';
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/gallery')) {
+      return isLocalhost ? 'gallery' : 'tribute';
+    }
+    return 'tribute';
   });
   const [activeSection, setActiveSection] = useState('hero');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -43,11 +47,30 @@ function AppContent() {
     setAuthModalOpen(true);
   };
 
+  // On production, if URL starts with /gallery, show Coming Soon modal
+  useEffect(() => {
+    if (!isLocalhost && typeof window !== 'undefined' && window.location.pathname.startsWith('/gallery')) {
+      setComingSoonInfo({
+        isOpen: true,
+        title: 'GALLERY PAGE',
+        message: 'The official Makima fan artwork gallery is coming soon! Check back shortly.'
+      });
+    }
+  }, []);
+
   // Sync URL history state
   useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname.startsWith('/gallery')) {
-        setCurrentView('gallery');
+        if (isLocalhost) {
+          setCurrentView('gallery');
+        } else {
+          setComingSoonInfo({
+            isOpen: true,
+            title: 'GALLERY PAGE',
+            message: 'The official Makima fan artwork gallery is coming soon! Check back shortly.'
+          });
+        }
       } else {
         setCurrentView('tribute');
       }
@@ -87,7 +110,6 @@ function AppContent() {
     });
 
     lenisRef.current = lenis;
-    window.lenis = lenis;
 
     function raf(time) {
       lenis.raf(time);
@@ -99,7 +121,7 @@ function AppContent() {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
-      window.lenis = null;
+      lenisRef.current = null;
     };
   }, [currentView]);
 
@@ -139,9 +161,17 @@ function AppContent() {
   // Smooth Navigation Handler for Landing Tribute
   const handleNavigate = (sectionId) => {
     if (sectionId === 'gallery') {
-      window.history.pushState({}, '', '/gallery');
-      setCurrentView('gallery');
-      window.scrollTo(0, 0);
+      if (isLocalhost) {
+        window.history.pushState({}, '', '/gallery');
+        setCurrentView('gallery');
+        window.scrollTo(0, 0);
+      } else {
+        setComingSoonInfo({
+          isOpen: true,
+          title: 'GALLERY PAGE',
+          message: 'The official Makima fan artwork gallery is coming soon! Check back shortly.'
+        });
+      }
       return;
     }
 
