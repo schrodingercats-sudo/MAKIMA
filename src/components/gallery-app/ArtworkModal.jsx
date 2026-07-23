@@ -13,7 +13,10 @@ import {
   ArrowRight02Icon,
   SparklesIcon,
   MoreHorizontalIcon,
-  Maximize01Icon
+  Maximize01Icon,
+  Download01Icon,
+  Flag01Icon,
+  Link01Icon
 } from '@hugeicons/core-free-icons';
 import './ArtworkModal.css';
 
@@ -36,9 +39,15 @@ export function ArtworkModal({
     { id: 3, name: 'Power', handle: '@power_blood', avatar: '/images/p3.jpg', text: 'Where nose?' }
   ]);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const overlayRef = useRef(null);
+  const [isExpandedImgOpen, setIsExpandedImgOpen] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Anime');
 
-  // Curated "Ideas you might love" category chips matching Pinterest screenshot
+  const overlayRef = useRef(null);
+  const commentInputRef = useRef(null);
+
+  // Curated "Ideas you might love" topic cards
   const curatedIdeas = [
     { title: 'Mommy makima', image: '/images/gallery-1.webp' },
     { title: 'Kishibe makima is listening', image: '/images/hero-bg.webp' },
@@ -51,6 +60,10 @@ export function ArtworkModal({
   useEffect(() => {
     if (artwork) {
       setImageLoaded(false);
+      setShowMoreMenu(false);
+      setIsExpandedImgOpen(false);
+      setSelectedCategory(artwork.category || 'Anime');
+
       const img = new Image();
       img.src = artwork.src;
       img.onload = () => setImageLoaded(true);
@@ -72,7 +85,13 @@ export function ArtworkModal({
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (isExpandedImgOpen) {
+          setIsExpandedImgOpen(false);
+        } else if (showMoreMenu) {
+          setShowMoreMenu(false);
+        } else {
+          onClose();
+        }
       } else if (e.key === 'ArrowRight') {
         const currentIndex = allArtworks.findIndex((a) => a.id === artwork.id);
         if (currentIndex >= 0 && currentIndex < allArtworks.length - 1) {
@@ -93,9 +112,9 @@ export function ArtworkModal({
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [artwork, allArtworks, onClose, onSelectArtwork]);
+  }, [artwork, allArtworks, isExpandedImgOpen, showMoreMenu, onClose, onSelectArtwork]);
 
-  // Partition recommendations into Side Column (2-col) & Bottom Feed
+  // Partition recommendations into Side Column & Bottom Feed
   const { sideArtworks, bottomArtworks } = useMemo(() => {
     if (!artwork || !allArtworks.length) return { sideArtworks: [], bottomArtworks: [] };
 
@@ -107,6 +126,11 @@ export function ArtworkModal({
   }, [artwork, allArtworks]);
 
   if (!artwork) return null;
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 2500);
+  };
 
   const handleAddComment = (e) => {
     e.preventDefault();
@@ -122,6 +146,7 @@ export function ArtworkModal({
       }
     ]);
     setCommentText('');
+    showToast('Comment posted!');
   };
 
   const handleRecommendationClick = (selectedArt) => {
@@ -131,9 +156,38 @@ export function ArtworkModal({
     onSelectArtwork(selectedArt);
   };
 
+  const handleDownloadArtwork = () => {
+    const link = document.createElement('a');
+    link.href = artwork.src;
+    link.download = `${artwork.title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowMoreMenu(false);
+    showToast('Artwork download started!');
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setShowMoreMenu(false);
+    showToast('Link copied to clipboard!');
+  };
+
   return (
     <AnimatePresence>
       <div className="pinterest-desktop-overlay" ref={overlayRef} onClick={onClose}>
+        {/* Toast Notification Banner */}
+        {toastMessage && (
+          <motion.div
+            className="pin-toast-banner"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <span>✓ {toastMessage}</span>
+          </motion.div>
+        )}
+
         <motion.div
           className="pinterest-layout-wrapper"
           initial={{ opacity: 0, scale: 0.96 }}
@@ -144,7 +198,7 @@ export function ArtworkModal({
         >
           {/* MAIN PIN ROW: [Pin Detail Card] + [Right 2-Col Side Grid] */}
           <div className="pin-detail-main-row">
-            {/* PIN DETAIL CARD (Exact Pinterest Card Layout) */}
+            {/* PIN DETAIL CARD */}
             <div className="pinterest-pin-card">
               {/* Left Side: Artwork Image Container */}
               <div className="pin-media-box">
@@ -161,60 +215,121 @@ export function ArtworkModal({
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <img src={artwork.src} alt={artwork.title} className="pin-exact-image" />
+                    <img
+                      src={artwork.src}
+                      alt={artwork.title}
+                      className="pin-exact-image"
+                      onClick={() => setIsExpandedImgOpen(true)}
+                    />
                   </motion.div>
                 </AnimatePresence>
 
-                <button className="pin-expand-btn" title="Expand image">
+                {/* Functional Expand Button */}
+                <button
+                  className="pin-expand-btn"
+                  onClick={() => setIsExpandedImgOpen(true)}
+                  title="Expand image lightbox"
+                >
                   <HugeiconsIcon icon={Maximize01Icon} size={18} />
                 </button>
               </div>
 
               {/* Right Side: Header Toolbar, Title, Artist & Discussion Pane */}
               <div className="pin-details-box">
-                {/* Top Action Toolbar matching Screenshot 1 */}
+                {/* Top Action Toolbar */}
                 <div className="pinterest-action-toolbar">
                   <div className="toolbar-left-actions">
+                    {/* Functional Like Button */}
                     <button
                       className={`toolbar-btn ${isLiked ? 'liked' : ''}`}
-                      onClick={() => onToggleLike(artwork.id)}
-                      title="Like"
+                      onClick={() => {
+                        onToggleLike(artwork.id);
+                        showToast(isLiked ? 'Artwork unliked' : 'Artwork liked!');
+                      }}
+                      title="Like artwork"
                     >
                       <HugeiconsIcon icon={FavouriteIcon} size={20} />
                       <span className="like-count">{artwork.likes + (isLiked ? 1 : 0)}</span>
                     </button>
 
-                    <button className="toolbar-btn" title="Comment">
+                    {/* Functional Comment Button */}
+                    <button
+                      className="toolbar-btn"
+                      onClick={() => commentInputRef.current?.focus()}
+                      title="Add a comment"
+                    >
                       <HugeiconsIcon icon={Comment01Icon} size={20} />
                     </button>
 
+                    {/* Functional Share Button */}
                     <button
                       className="toolbar-btn"
-                      onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        alert('Link copied!');
-                      }}
-                      title="Share"
+                      onClick={handleCopyLink}
+                      title="Share link"
                     >
                       <HugeiconsIcon icon={Share01Icon} size={20} />
                     </button>
 
-                    <button className="toolbar-btn" title="More Options">
-                      <HugeiconsIcon icon={MoreHorizontalIcon} size={20} />
-                    </button>
+                    {/* Functional More Options Menu */}
+                    <div className="more-menu-wrapper">
+                      <button
+                        className={`toolbar-btn ${showMoreMenu ? 'active' : ''}`}
+                        onClick={() => setShowMoreMenu(!showMoreMenu)}
+                        title="More Options"
+                      >
+                        <HugeiconsIcon icon={MoreHorizontalIcon} size={20} />
+                      </button>
+
+                      {showMoreMenu && (
+                        <div className="more-dropdown-menu">
+                          <button className="menu-option-btn" onClick={handleDownloadArtwork}>
+                            <HugeiconsIcon icon={Download01Icon} size={16} />
+                            <span>Download Artwork</span>
+                          </button>
+                          <button className="menu-option-btn" onClick={handleCopyLink}>
+                            <HugeiconsIcon icon={Link01Icon} size={16} />
+                            <span>Copy Image Link</span>
+                          </button>
+                          <button
+                            className="menu-option-btn danger"
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              showToast('Report submitted for review');
+                            }}
+                          >
+                            <HugeiconsIcon icon={Flag01Icon} size={16} />
+                            <span>Report Artwork</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Styled Category Dropdown & Functional Save Button */}
                   <div className="toolbar-right-actions">
-                    <select className="pin-category-select" defaultValue={artwork.category}>
-                      <option value="Anime">Anime</option>
-                      <option value="Editorial">Editorial</option>
-                      <option value="Illustration">Illustration</option>
-                      <option value="Manga">Manga</option>
-                    </select>
+                    <div className="category-select-pill">
+                      <select
+                        className="pin-category-select"
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          showToast(`Category updated to ${e.target.value}`);
+                        }}
+                      >
+                        <option value="Anime">Anime</option>
+                        <option value="Editorial">Editorial</option>
+                        <option value="Illustration">Illustration</option>
+                        <option value="Manga">Manga</option>
+                        <option value="Concept">Concept</option>
+                      </select>
+                    </div>
 
                     <button
                       className={`pinterest-save-btn ${isSaved ? 'saved' : ''}`}
-                      onClick={() => onToggleSave(artwork.id)}
+                      onClick={() => {
+                        onToggleSave(artwork.id);
+                        showToast(isSaved ? 'Removed from Saved' : 'Saved to Collection!');
+                      }}
                     >
                       {isSaved ? 'Saved' : 'Save'}
                     </button>
@@ -230,7 +345,10 @@ export function ArtworkModal({
                   </div>
                   <button
                     className={`pinterest-follow-btn ${isFollowing ? 'following' : ''}`}
-                    onClick={() => setIsFollowing(!isFollowing)}
+                    onClick={() => {
+                      setIsFollowing(!isFollowing);
+                      showToast(isFollowing ? `Unfollowed @${artwork.artistHandle}` : `Following @${artwork.artistHandle}`);
+                    }}
                   >
                     {isFollowing ? 'Following' : 'Follow'}
                   </button>
@@ -248,7 +366,7 @@ export function ArtworkModal({
                   </div>
                 </div>
 
-                {/* Comments Discussion Section */}
+                {/* Comments Discussion Section (Tight gap, no blank whitespace!) */}
                 <div className="pinterest-comments-block">
                   <div className="comments-header-row">
                     <span className="comments-count-title">{comments.length} comments</span>
@@ -270,20 +388,28 @@ export function ArtworkModal({
                   <form onSubmit={handleAddComment} className="pinterest-comment-input-bar">
                     <input
                       type="text"
+                      ref={commentInputRef}
                       className="pinterest-input"
-                      placeholder="Add a comment"
+                      placeholder="Add a comment..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                     />
                     <div className="input-emoji-tools">
-                      <button type="button" className="emoji-btn" title="Add emoji">😊</button>
+                      <button
+                        type="button"
+                        className="emoji-btn"
+                        onClick={() => setCommentText((prev) => prev + ' 😊')}
+                        title="Add emoji"
+                      >
+                        😊
+                      </button>
                     </div>
                   </form>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT 2-COLUMN RECOMMENDATION SIDE-GRID (Matching Screenshot 1 Right Pane) */}
+            {/* RIGHT 2-COLUMN RECOMMENDATION SIDE-GRID */}
             <div className="pinterest-side-recommendations">
               {sideArtworks.map((item) => (
                 <motion.div
@@ -302,7 +428,7 @@ export function ArtworkModal({
             </div>
           </div>
 
-          {/* BOTTOM MASONRY RECOMMENDATION FEED (Matching Screenshot 2 Continuous Grid) */}
+          {/* BOTTOM MASONRY RECOMMENDATION FEED */}
           <div className="pinterest-bottom-feed-container">
             {/* Curated "Ideas you might love" Topic Cards Row */}
             <div className="ideas-might-love-section">
@@ -338,6 +464,34 @@ export function ArtworkModal({
             </div>
           </div>
         </motion.div>
+
+        {/* FULLSCREEN IMAGE LIGHTBOX MODAL */}
+        <AnimatePresence>
+          {isExpandedImgOpen && (
+            <div className="expanded-image-modal-overlay" onClick={() => setIsExpandedImgOpen(false)}>
+              <motion.div
+                className="expanded-image-content"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="expanded-close-btn"
+                  onClick={() => setIsExpandedImgOpen(false)}
+                  title="Close Lightbox"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={24} />
+                </button>
+                <img src={artwork.src} alt={artwork.title} className="expanded-full-img" />
+                <div className="expanded-img-caption">
+                  <h4>{artwork.title}</h4>
+                  <p>by {artwork.artist} ({artwork.artistHandle})</p>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </AnimatePresence>
   );
