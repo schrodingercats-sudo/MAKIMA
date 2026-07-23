@@ -56,6 +56,22 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Background Prefetch & Cache mine2.mp4 Video for instant zero-latency Auth loading
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.href = '/mine2.mp4';
+    link.as = 'video';
+    link.type = 'video/mp4';
+    document.head.appendChild(link);
+
+    return () => {
+      if (document.head.contains(link)) {
+        document.head.removeChild(link);
+      }
+    };
+  }, []);
+
   // Initialize Lenis Smooth Scroll on tribute view
   useEffect(() => {
     if (currentView !== 'tribute') return;
@@ -253,7 +269,10 @@ function AppContent() {
         </>
       )}
 
-      {/* Global Auth Modal */}
+      {/* Hidden background prefetch video element */}
+      <video src="/mine2.mp4" preload="auto" muted style={{ display: 'none' }} aria-hidden="true" />
+
+      {/* Global Auth View */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
