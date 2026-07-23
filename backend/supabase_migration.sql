@@ -1,15 +1,11 @@
 -- ============================================================
--- MAKIMA GALLERY — Clean & Tested Supabase Database Schema
+-- MAKIMA GALLERY — Complete Pure SQL Supabase Database Schema
 -- Paste directly into: Supabase Dashboard → SQL Editor → Run
 -- ============================================================
 
 -- Enable required PostgreSQL extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
--- Drop existing tables/functions cleanly if re-running
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS public.handle_new_user();
 
 -- ============================================================
 -- 1. PROFILES (extends Supabase auth.users)
@@ -47,6 +43,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -79,7 +76,7 @@ CREATE TABLE IF NOT EXISTS public.artworks (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Search vector trigger function (fixes PostgreSQL 42P17 immutable generation error)
+-- Search vector trigger function
 CREATE OR REPLACE FUNCTION public.artworks_search_update()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -323,46 +320,41 @@ ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
 
--- Clean existing policies before creating
-DO $$ 
-BEGIN
-  DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
-  DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-  DROP POLICY IF EXISTS "Artworks are viewable by everyone" ON public.artworks;
-  DROP POLICY IF EXISTS "Authenticated users can create artworks" ON public.artworks;
-  DROP POLICY IF EXISTS "Artists can update own artworks" ON public.artworks;
-  DROP POLICY IF EXISTS "Artists can delete own artworks" ON public.artworks;
-  DROP POLICY IF EXISTS "Likes are viewable by everyone" ON public.likes;
-  DROP POLICY IF EXISTS "Authenticated users can like" ON public.likes;
-  DROP POLICY IF EXISTS "Users can unlike own likes" ON public.likes;
-  DROP POLICY IF EXISTS "Users can view own saves" ON public.saves;
-  DROP POLICY IF EXISTS "Authenticated users can save" ON public.saves;
-  DROP POLICY IF EXISTS "Users can unsave own saves" ON public.saves;
-  DROP POLICY IF EXISTS "Comments are viewable by everyone" ON public.comments;
-  DROP POLICY IF EXISTS "Authenticated users can comment" ON public.comments;
-  DROP POLICY IF EXISTS "Users can update own comments" ON public.comments;
-  DROP POLICY IF EXISTS "Users can delete own comments" ON public.comments;
-  DROP POLICY IF EXISTS "Follows are viewable by everyone" ON public.follows;
-  DROP POLICY IF EXISTS "Authenticated users can follow" ON public.follows;
-  DROP POLICY IF EXISTS "Users can unfollow" ON public.follows;
-  DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
-  DROP POLICY IF EXISTS "Users can mark own notifications read" ON public.notifications;
-  DROP POLICY IF EXISTS "Public collections viewable by everyone" ON public.collections;
-  DROP POLICY IF EXISTS "Authenticated users can create collections" ON public.collections;
-  DROP POLICY IF EXISTS "Users can update own collections" ON public.collections;
-  DROP POLICY IF EXISTS "Users can delete own collections" ON public.collections;
-EXCEPTION
-  WHEN OTHERS THEN NULL;
-END $$;
+-- Clean existing policies cleanly
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Artworks are viewable by everyone" ON public.artworks;
+DROP POLICY IF EXISTS "Authenticated users can create artworks" ON public.artworks;
+DROP POLICY IF EXISTS "Artists can update own artworks" ON public.artworks;
+DROP POLICY IF EXISTS "Artists can delete own artworks" ON public.artworks;
+DROP POLICY IF EXISTS "Likes are viewable by everyone" ON public.likes;
+DROP POLICY IF EXISTS "Authenticated users can like" ON public.likes;
+DROP POLICY IF EXISTS "Users can unlike own likes" ON public.likes;
+DROP POLICY IF EXISTS "Users can view own saves" ON public.saves;
+DROP POLICY IF EXISTS "Authenticated users can save" ON public.saves;
+DROP POLICY IF EXISTS "Users can unsave own saves" ON public.saves;
+DROP POLICY IF EXISTS "Comments are viewable by everyone" ON public.comments;
+DROP POLICY IF EXISTS "Authenticated users can comment" ON public.comments;
+DROP POLICY IF EXISTS "Users can update own comments" ON public.comments;
+DROP POLICY IF EXISTS "Users can delete own comments" ON public.comments;
+DROP POLICY IF EXISTS "Follows are viewable by everyone" ON public.follows;
+DROP POLICY IF EXISTS "Authenticated users can follow" ON public.follows;
+DROP POLICY IF EXISTS "Users can unfollow" ON public.follows;
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can mark own notifications read" ON public.notifications;
+DROP POLICY IF EXISTS "Public collections viewable by everyone" ON public.collections;
+DROP POLICY IF EXISTS "Authenticated users can create collections" ON public.collections;
+DROP POLICY IF EXISTS "Users can update own collections" ON public.collections;
+DROP POLICY IF EXISTS "Users can delete own collections" ON public.collections;
 
--- PROFILES
+-- PROFILES POLICIES
 CREATE POLICY "Profiles are viewable by everyone"
   ON public.profiles FOR SELECT USING (true);
 
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- ARTWORKS
+-- ARTWORKS POLICIES
 CREATE POLICY "Artworks are viewable by everyone"
   ON public.artworks FOR SELECT USING (true);
 
@@ -375,7 +367,7 @@ CREATE POLICY "Artists can update own artworks"
 CREATE POLICY "Artists can delete own artworks"
   ON public.artworks FOR DELETE USING (auth.uid() = artist_id);
 
--- LIKES
+-- LIKES POLICIES
 CREATE POLICY "Likes are viewable by everyone"
   ON public.likes FOR SELECT USING (true);
 
@@ -385,7 +377,7 @@ CREATE POLICY "Authenticated users can like"
 CREATE POLICY "Users can unlike own likes"
   ON public.likes FOR DELETE USING (auth.uid() = user_id);
 
--- SAVES
+-- SAVES POLICIES
 CREATE POLICY "Users can view own saves"
   ON public.saves FOR SELECT USING (auth.uid() = user_id);
 
@@ -395,7 +387,7 @@ CREATE POLICY "Authenticated users can save"
 CREATE POLICY "Users can unsave own saves"
   ON public.saves FOR DELETE USING (auth.uid() = user_id);
 
--- COMMENTS
+-- COMMENTS POLICIES
 CREATE POLICY "Comments are viewable by everyone"
   ON public.comments FOR SELECT USING (true);
 
@@ -408,7 +400,7 @@ CREATE POLICY "Users can update own comments"
 CREATE POLICY "Users can delete own comments"
   ON public.comments FOR DELETE USING (auth.uid() = user_id);
 
--- FOLLOWS
+-- FOLLOWS POLICIES
 CREATE POLICY "Follows are viewable by everyone"
   ON public.follows FOR SELECT USING (true);
 
@@ -418,14 +410,14 @@ CREATE POLICY "Authenticated users can follow"
 CREATE POLICY "Users can unfollow"
   ON public.follows FOR DELETE USING (auth.uid() = follower_id);
 
--- NOTIFICATIONS
+-- NOTIFICATIONS POLICIES
 CREATE POLICY "Users can view own notifications"
   ON public.notifications FOR SELECT USING (auth.uid() = recipient_id);
 
 CREATE POLICY "Users can mark own notifications read"
   ON public.notifications FOR UPDATE USING (auth.uid() = recipient_id);
 
--- COLLECTIONS
+-- COLLECTIONS POLICIES
 CREATE POLICY "Public collections viewable by everyone"
   ON public.collections FOR SELECT USING (is_private = false OR auth.uid() = user_id);
 
@@ -439,31 +431,7 @@ CREATE POLICY "Users can delete own collections"
   ON public.collections FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================================
--- 11. ENABLE REALTIME
--- ============================================================
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'artworks') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.artworks;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'likes') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.likes;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'comments') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'notifications') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'follows') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.follows;
-  END IF;
-EXCEPTION
-  WHEN OTHERS THEN NULL;
-END $$;
-
--- ============================================================
--- 12. STORAGE BUCKETS
+-- 11. STORAGE BUCKETS
 -- ============================================================
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES
@@ -471,16 +439,10 @@ VALUES
   ('avatars', 'avatars', true, 2097152, ARRAY['image/jpeg', 'image/png', 'image/webp'])
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS Policies
-DO $$
-BEGIN
-  DROP POLICY IF EXISTS "Public artwork images" ON storage.objects;
-  DROP POLICY IF EXISTS "Auth users can upload artworks" ON storage.objects;
-  DROP POLICY IF EXISTS "Public avatar images" ON storage.objects;
-  DROP POLICY IF EXISTS "Auth users can upload avatars" ON storage.objects;
-EXCEPTION
-  WHEN OTHERS THEN NULL;
-END $$;
+DROP POLICY IF EXISTS "Public artwork images" ON storage.objects;
+DROP POLICY IF EXISTS "Auth users can upload artworks" ON storage.objects;
+DROP POLICY IF EXISTS "Public avatar images" ON storage.objects;
+DROP POLICY IF EXISTS "Auth users can upload avatars" ON storage.objects;
 
 CREATE POLICY "Public artwork images" ON storage.objects
   FOR SELECT USING (bucket_id = 'artworks');
@@ -493,7 +455,3 @@ CREATE POLICY "Public avatar images" ON storage.objects
 
 CREATE POLICY "Auth users can upload avatars" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
-
--- ============================================================
--- SUCCESS: Schema created cleanly with 0 errors!
--- ============================================================
