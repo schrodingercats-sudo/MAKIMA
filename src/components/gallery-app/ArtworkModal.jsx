@@ -16,7 +16,8 @@ import {
   Maximize01Icon,
   Download01Icon,
   Flag01Icon,
-  Link01Icon
+  Link01Icon,
+  ArrowDown01Icon
 } from '@hugeicons/core-free-icons';
 import './ArtworkModal.css';
 
@@ -41,6 +42,7 @@ export function ArtworkModal({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExpandedImgOpen, setIsExpandedImgOpen] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Anime');
 
@@ -56,11 +58,14 @@ export function ArtworkModal({
     { title: 'Makima black and white', image: '/images/gallery-4.webp' }
   ];
 
+  const categoryOptions = ['Anime', 'Editorial', 'Illustration', 'Manga', 'Concept'];
+
   // Preload image and sync History API
   useEffect(() => {
     if (artwork) {
       setImageLoaded(false);
       setShowMoreMenu(false);
+      setShowCategoryMenu(false);
       setIsExpandedImgOpen(false);
       setSelectedCategory(artwork.category || 'Anime');
 
@@ -89,6 +94,8 @@ export function ArtworkModal({
           setIsExpandedImgOpen(false);
         } else if (showMoreMenu) {
           setShowMoreMenu(false);
+        } else if (showCategoryMenu) {
+          setShowCategoryMenu(false);
         } else {
           onClose();
         }
@@ -112,7 +119,7 @@ export function ArtworkModal({
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [artwork, allArtworks, isExpandedImgOpen, showMoreMenu, onClose, onSelectArtwork]);
+  }, [artwork, allArtworks, isExpandedImgOpen, showMoreMenu, showCategoryMenu, onClose, onSelectArtwork]);
 
   // Partition recommendations into Side Column & Bottom Feed
   const { sideArtworks, bottomArtworks } = useMemo(() => {
@@ -305,23 +312,35 @@ export function ArtworkModal({
                     </div>
                   </div>
 
-                  {/* Styled Category Dropdown & Functional Save Button */}
+                  {/* Clean Custom Category Dropdown Pill (Zero Empty Whitespace!) */}
                   <div className="toolbar-right-actions">
-                    <div className="category-select-pill">
-                      <select
-                        className="pin-category-select"
-                        value={selectedCategory}
-                        onChange={(e) => {
-                          setSelectedCategory(e.target.value);
-                          showToast(`Category updated to ${e.target.value}`);
-                        }}
+                    <div className="custom-category-wrapper">
+                      <button
+                        className="category-pill-btn"
+                        onClick={() => setShowCategoryMenu(!showCategoryMenu)}
                       >
-                        <option value="Anime">Anime</option>
-                        <option value="Editorial">Editorial</option>
-                        <option value="Illustration">Illustration</option>
-                        <option value="Manga">Manga</option>
-                        <option value="Concept">Concept</option>
-                      </select>
+                        <span>{selectedCategory}</span>
+                        <HugeiconsIcon icon={ArrowDown01Icon} size={12} className="category-arrow-icon" />
+                      </button>
+
+                      {showCategoryMenu && (
+                        <div className="category-dropdown-popover">
+                          {categoryOptions.map((cat) => (
+                            <button
+                              key={cat}
+                              className={`category-option-btn ${selectedCategory === cat ? 'selected' : ''}`}
+                              onClick={() => {
+                                setSelectedCategory(cat);
+                                setShowCategoryMenu(false);
+                                showToast(`Category set to ${cat}`);
+                              }}
+                            >
+                              <span>{cat}</span>
+                              {selectedCategory === cat && <span className="cat-check">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <button

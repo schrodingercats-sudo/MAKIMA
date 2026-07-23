@@ -215,36 +215,88 @@
   gap: 8px;
 }
 
-/* Category Select Dropdown Pill matching Pinterest dropdown design */
-.category-select-pill {
+/* Clean Custom Category Dropdown Pill (Zero Empty Whitespace!) */
+.custom-category-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: inline-flex;
 }
 
-.pin-category-select {
-  appearance: none;
+.category-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
   border: 1px solid #E2DDD5;
   background-color: #F8F6F2;
-  border-radius: 18px;
-  height: 36px;
-  padding: 0 26px 0 12px;
   font-family: var(--font-sans, system-ui);
   font-size: 0.82rem;
   font-weight: 700;
   color: #333333;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%3C333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
+  white-space: nowrap;
 }
 
-.pin-category-select:hover,
-.pin-category-select:focus {
-  outline: none;
-  border-color: #A63D3D;
+.category-pill-btn:hover {
   background-color: #FFFFFF;
+  border-color: #A63D3D;
+  color: #A63D3D;
+}
+
+.category-arrow-icon {
+  color: #666666;
+  flex-shrink: 0;
+}
+
+.category-dropdown-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  z-index: 120;
+  min-width: 140px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid #EAE6DE;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.category-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans, system-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.category-option-btn:hover {
+  background-color: #F8F6F2;
+  color: #A63D3D;
+}
+
+.category-option-btn.selected {
+  font-weight: 700;
+  color: #A63D3D;
+}
+
+.cat-check {
+  font-size: 0.8rem;
+  color: #A63D3D;
 }
 
 .pinterest-save-btn {
