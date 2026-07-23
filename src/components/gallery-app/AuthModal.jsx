@@ -147,7 +147,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
           {/* Right Side: Editorial Form Pane matching Image 2 */}
           <div className="auth-form-pane">
             <div className="auth-form-header">
-              <span className="small-brand-tag">• Kreative Gallery</span>
               <h2 className="auth-headline">
                 {mode === 'signin' && 'Welcome Back!'}
                 {mode === 'signup' && 'Create Account'}
