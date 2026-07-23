@@ -1,89 +1,128 @@
-/* Artwork Modal Styles */
-.artwork-modal-overlay {
+/* Pinterest-Style Continuous Exploration Artwork Viewer Overlay */
+.pinterest-viewer-overlay {
   position: fixed;
   inset: 0;
   z-index: 999999;
-  background-color: rgba(15, 14, 13, 0.85);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
+  background-color: rgba(15, 14, 13, 0.65);
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+  padding: 40px 24px 60px 24px;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
 }
 
-.artwork-modal-card {
+.pinterest-viewer-container {
   position: relative;
-  width: 100%;
-  max-width: 1100px;
-  max-height: 90vh;
-  background-color: #FFFFFF;
-  border-radius: 20px;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  width: 92vw;
+  max-width: 1280px;
   display: flex;
   flex-direction: column;
+  gap: 40px;
 }
 
-.artwork-close-btn {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 10;
-  width: 38px;
-  height: 38px;
+/* Floating Close Button */
+.pinterest-close-btn {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(17, 17, 17, 0.7);
-  border: none;
+  background: rgba(17, 17, 17, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   transition: all 0.2s ease;
 }
 
-.artwork-close-btn:hover {
+.pinterest-close-btn:hover {
   background: #A63D3D;
-  transform: scale(1.05);
+  border-color: #A63D3D;
+  transform: scale(1.08);
 }
 
-.artwork-grid {
+/* MAIN PIN CARD (65% / 35% Split Layout) */
+.main-pin-card {
   display: grid;
-  grid-template-columns: 1fr 420px;
-  height: 100%;
-  max-height: 90vh;
+  grid-template-columns: 65% 35%;
+  min-height: 80vh;
+  background-color: #FFFFFF;
+  border-radius: 24px;
   overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.4);
 }
 
-.artwork-media-container {
+/* LEFT 65%: Large High-Res Artwork Area */
+.pin-media-area {
+  position: relative;
   background-color: #0F0E0D;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px;
   overflow: hidden;
+  min-height: 580px;
 }
 
-.artwork-main-img {
+.pin-image-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-main-image {
   max-width: 100%;
-  max-height: 80vh;
+  max-height: 75vh;
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
-.artwork-details-pane {
-  padding: 32px 28px;
+.nav-shortcut-hints {
+  position: absolute;
+  bottom: 16px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.hint-pill {
+  background: rgba(17, 17, 17, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-family: var(--font-sans, system-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #D7B26A;
+  backdrop-filter: blur(4px);
+}
+
+/* RIGHT 35%: Information, Actions & Discussion Pane */
+.pin-info-pane {
+  padding: 36px 32px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto;
   background-color: #FFFFFF;
+  overflow-y: auto;
+  max-height: 80vh;
 }
 
-.artwork-artist-row {
+/* Artist Row */
+.pin-artist-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -97,8 +136,8 @@
 }
 
 .artist-avatar-img {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #E5E0D8;
@@ -111,7 +150,7 @@
 
 .artist-name {
   font-family: var(--font-sans, system-ui);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: #111111;
   margin: 0;
@@ -127,7 +166,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 20px;
   border: 1px solid #D0C9BE;
   background-color: #FFFFFF;
@@ -151,92 +190,94 @@
   color: #A63D3D;
 }
 
-.artwork-header-box {
+.pin-header-box {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.artwork-category-badge {
+.pin-category-badge {
   font-family: var(--font-sans, system-ui);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 1.5px;
   color: #A63D3D;
   text-transform: uppercase;
 }
 
-.artwork-title {
-  font-family: var(--font-serif, Georgia, serif);
-  font-size: 1.6rem;
+.pin-title {
+  font-family: var(--font-serif, "Cormorant Garamond", Georgia, serif);
+  font-size: 1.8rem;
   font-weight: 700;
   color: #111111;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
-.artwork-action-bar {
+/* Action Bar */
+.pin-action-bar {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.action-pill-btn {
+.pin-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 9px 18px;
   border-radius: 20px;
   border: 1px solid #E2DDD5;
   background-color: #F8F6F2;
   font-family: var(--font-sans, system-ui);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #444444;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.action-pill-btn:hover {
+.pin-action-btn:hover {
   background-color: #FFFFFF;
   border-color: #A63D3D;
   color: #A63D3D;
 }
 
-.action-pill-btn.liked {
+.pin-action-btn.liked {
   background-color: rgba(166, 61, 61, 0.12);
   border-color: #A63D3D;
   color: #A63D3D;
 }
 
-.action-pill-btn.saved {
+.pin-action-btn.saved {
   background-color: #111111;
   border-color: #111111;
   color: #FFFFFF;
 }
 
-.artwork-tags-row {
+.pin-tags-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.tag-chip {
+.pin-tag-chip {
   font-family: var(--font-sans, system-ui);
   font-size: 0.75rem;
   color: #777777;
   background-color: #F2EFEA;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 12px;
 }
 
-.comments-section {
+/* Comments Section */
+.pin-comments-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 10px;
   border-top: 1px solid #EEEEEE;
-  padding-top: 16px;
+  padding-top: 20px;
 }
 
 .comments-header-title {
@@ -254,7 +295,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -314,7 +355,7 @@
 
 .comment-input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 9px 14px;
   border-radius: 8px;
   border: 1px solid #E2DDD5;
   background-color: #FAFAFA;
@@ -329,7 +370,7 @@
 }
 
 .comment-submit-btn {
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   border: none;
   background-color: #8A2E2E;
@@ -345,13 +386,144 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 900px) {
-  .artwork-grid {
+/* CONTINUOUS RECOMMENDATION FEED ("MORE LIKE THIS") */
+.recommendations-feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  width: 100%;
+}
+
+.feed-header-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 10px 0;
+}
+
+.feed-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.feed-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(248, 246, 242, 0.95);
+  border: 1px solid rgba(215, 178, 106, 0.4);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-family: var(--font-sans, system-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #A63D3D;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.recommendation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-feed-title {
+  font-family: var(--font-serif, "Cormorant Garamond", Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #F8F6F2;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.recommendation-masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.rec-artwork-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  height: 260px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background-color: #111111;
+}
+
+.rec-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.rec-artwork-card:hover .rec-img {
+  transform: scale(1.05);
+}
+
+.rec-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(17, 17, 17, 0.9) 0%, transparent 60%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 14px;
+  opacity: 0.95;
+}
+
+.rec-title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 2px;
+}
+
+.rec-artist {
+  font-family: var(--font-sans, system-ui);
+  font-size: 0.75rem;
+  color: #D7B26A;
+}
+
+/* RESPONSIVE DESIGNS */
+@media (max-width: 1024px) {
+  .main-pin-card {
     grid-template-columns: 1fr;
-    overflow-y: auto;
+    min-height: auto;
   }
 
-  .artwork-media-container {
-    height: 350px;
+  .pin-media-area {
+    min-height: 400px;
+  }
+
+  .pin-info-pane {
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .pinterest-viewer-overlay {
+    padding: 0;
+  }
+
+  .pinterest-viewer-container {
+    width: 100%;
+    gap: 20px;
+  }
+
+  .main-pin-card {
+    border-radius: 0;
+  }
+
+  .pinterest-close-btn {
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
   }
 }

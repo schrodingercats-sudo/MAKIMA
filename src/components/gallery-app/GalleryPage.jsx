@@ -56,6 +56,18 @@ export function GalleryPage({ onBackToTribute }) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollContainerRef = useRef(null);
 
+  // Auto-detect /gallery/artwork/:id URL on mount
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/gallery/artwork/')) {
+      const artId = path.split('/gallery/artwork/')[1];
+      const match = INITIAL_ARTWORKS.find((a) => a.id === artId);
+      if (match) {
+        setSelectedArtwork(match);
+      }
+    }
+  }, []);
+
   // Debounce search input (~300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,7 +76,7 @@ export function GalleryPage({ onBackToTribute }) {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Keyboard Shortcuts (⌘K or / to focus search, Esc to close)
+  // Keyboard Shortcuts (⌘K or / to focus search)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -274,7 +286,7 @@ export function GalleryPage({ onBackToTribute }) {
       </aside>
 
       {/* MAIN GALLERY CONTENT WRAPPER */}
-      <main className="gallery-main-layout">
+      <main className={`gallery-main-layout ${selectedArtwork ? 'is-blurred' : ''}`}>
         {/* Gallery Title & Search Header */}
         <div className="gallery-title-search-row">
           <div className="gallery-title-box">
@@ -526,10 +538,16 @@ export function GalleryPage({ onBackToTribute }) {
         }}
       />
 
-      {/* ARTWORK DETAIL MODAL */}
+      {/* PINTEREST-STYLE CONTINUOUS ARTWORK VIEWER OVERLAY */}
       <ArtworkModal
         artwork={selectedArtwork}
-        onClose={() => setSelectedArtwork(null)}
+        allArtworks={artworks}
+        onClose={() => {
+          setSelectedArtwork(null);
+          if (window.location.pathname.includes('/gallery/artwork/')) {
+            window.history.pushState({}, '', '/gallery');
+          }
+        }}
         isLiked={selectedArtwork ? likedArtworks.has(selectedArtwork.id) : false}
         isSaved={selectedArtwork ? savedArtworks.has(selectedArtwork.id) : false}
         onToggleLike={handleToggleLike}
@@ -538,6 +556,7 @@ export function GalleryPage({ onBackToTribute }) {
           setSelectedArtwork(null);
           setActiveProfileView(uname);
         }}
+        onSelectArtwork={(art) => setSelectedArtwork(art)}
       />
     </div>
   );

@@ -237,7 +237,12 @@
   padding-right: 48px;
   padding-bottom: 60px;
   box-sizing: border-box;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease, filter 0.3s ease;
+}
+
+.gallery-main-layout.is-blurred {
+  filter: blur(8px);
+  pointer-events: none;
 }
 
 .sidebar-collapsed .gallery-main-layout {
