@@ -10,7 +10,6 @@ import {
   Settings02Icon,
   Search01Icon,
   GridIcon,
-  Menu01Icon,
   Upload01Icon,
   FavouriteIcon,
   ArrowLeft02Icon,
@@ -39,7 +38,6 @@ export function GalleryPage({ onBackToTribute }) {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedMedia, setSelectedMedia] = useState('All Media');
   const [sortBy, setSortBy] = useState('Trending');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Search State with Debounce
@@ -311,7 +309,7 @@ export function GalleryPage({ onBackToTribute }) {
           </div>
         </div>
 
-        {/* FILTER BAR ROW (Tabs, Dropdowns, View Mode, Upload) */}
+        {/* FILTER BAR ROW (Tabs, Dropdowns, Upload) */}
         <div className="gallery-filter-toolbar">
           {/* Left Category Tabs */}
           <div className="filter-tabs-group">
@@ -327,7 +325,7 @@ export function GalleryPage({ onBackToTribute }) {
             ))}
           </div>
 
-          {/* Right Controls: Category Dropdown, Media Dropdown, View Toggles, Upload */}
+          {/* Right Controls: Category Dropdown, Media Dropdown, Upload */}
           <div className="filter-dropdowns-group">
             {/* Category Select Dropdown */}
             <div className="custom-select-wrapper">
@@ -362,24 +360,6 @@ export function GalleryPage({ onBackToTribute }) {
               <HugeiconsIcon icon={ArrowDown01Icon} size={14} className="select-arrow" />
             </div>
 
-            {/* View Mode Grid/List Toggles */}
-            <div className="view-mode-toggle-group">
-              <button
-                className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
-                title="Grid View"
-              >
-                <HugeiconsIcon icon={GridIcon} size={18} />
-              </button>
-              <button
-                className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setViewMode('list')}
-                title="List View"
-              >
-                <HugeiconsIcon icon={Menu01Icon} size={18} />
-              </button>
-            </div>
-
             {/* Upload Button Trigger */}
             <button className="upload-trigger-primary-btn" onClick={() => setUploadOpen(true)}>
               <HugeiconsIcon icon={Upload01Icon} size={16} />
@@ -398,7 +378,7 @@ export function GalleryPage({ onBackToTribute }) {
             </button>
           </div>
         ) : (
-          <div className={`masonry-gallery-container ${viewMode === 'list' ? 'list-layout' : ''}`}>
+          <div className="masonry-gallery-container">
             {filteredArtworks.map((art) => {
               const isLiked = likedArtworks.has(art.id);
               const isSaved = savedArtworks.has(art.id);
