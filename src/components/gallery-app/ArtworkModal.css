@@ -134,14 +134,14 @@
   transform: scale(1.08);
 }
 
-/* Right Details Box (Strict top-to-bottom layout, zero giant blank gaps!) */
+/* Right Details Box (No inner scrollbar, natural content flow!) */
 .pin-details-box {
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
-  max-height: 75vh;
+  overflow: visible;
+  height: auto;
 }
 
 /* Action Toolbar matching Screenshot 1 */
@@ -149,7 +149,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   padding-bottom: 12px;
   border-bottom: 1px solid #F4F0E8;
 }
@@ -157,7 +157,7 @@
 .toolbar-left-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .toolbar-btn {
@@ -176,14 +176,14 @@
 
 .toolbar-btn.like-btn {
   gap: 6px;
-  padding: 8px 16px;
-  height: 40px;
-  border-radius: 20px;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: 18px;
 }
 
 .toolbar-btn.icon-only {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: 50%;
 }
@@ -212,7 +212,7 @@
 .toolbar-right-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* Category Select Dropdown Pill matching Pinterest dropdown design */
@@ -224,17 +224,18 @@
 
 .pin-category-select {
   appearance: none;
-  border: 1px solid #DCD6CC;
+  border: 1px solid #E2DDD5;
   background-color: #F8F6F2;
-  border-radius: 20px;
-  padding: 8px 32px 8px 14px;
+  border-radius: 18px;
+  height: 36px;
+  padding: 0 26px 0 12px;
   font-family: var(--font-sans, system-ui);
   font-size: 0.82rem;
   font-weight: 700;
   color: #333333;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%3C333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%3C333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
 }
@@ -247,17 +248,21 @@
 }
 
 .pinterest-save-btn {
-  padding: 10px 22px;
-  border-radius: 24px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 18px;
   border: none;
   background-color: #E60023; /* Pinterest Red */
   color: #FFFFFF;
   font-family: var(--font-sans, system-ui);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(230, 0, 35, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pinterest-save-btn:hover {
